@@ -1,6 +1,8 @@
 /* POST /api/pedido → valida el pedido, comprueba el pago, emite la factura de consumidor final y la envía por correo con el PDF. */
 const { ENV, leerJSON, enviar, limitar, paypal } = require('./_util');
 const F = require('../lib/factura.js');
+const UD = require('../lib/datos.js');
+const db = require('./_db');
 const LOGO = require('../lib/logo.js');
 const { jsPDF } = require('jspdf');
 const nodemailer = require('nodemailer');
@@ -43,7 +45,7 @@ module.exports = async (req, res) => {
   let f;
   try {
     const ped = await leerJSON(req);
-    f = F.armarFactura(ped);
+    f = F.armarFactura(ped, { sinLimite: db.configurada() });
     /* Comprueba el pago según el método. */
     if (f.pago === 'tarjeta-prueba') {
       const ult4 = String(ped.tarjeta?.ult4 || '');
@@ -59,11 +61,27 @@ module.exports = async (req, res) => {
     }
   } catch (e) { return enviar(res, 400, { error: e.message }); }
 
-  /* Número de control (formato DTE). Sin base de datos se deriva de la hora; con base de datos sería un correlativo. */
-  f.control = 'DTE-01-UD01P001-' + String(Date.now()).padStart(15, '0');
   f.codigo = crypto.randomUUID().toUpperCase();
+  let existencias = null;
+  if (db.configurada()) {
+    /* Con Supabase: correlativo real, descuento de inventario, kardex y costo de ventas en un solo paso. */
+    try {
+      const r = await db.emitirFactura({ ...f, pago_detalle: f.tarjeta || f.paypal || {} });
+      f.id = r.id; f.correlativo = r.correlativo; f.control = r.control; existencias = r.existencias;
+    } catch (e) {
+      const sin = db.errorExistencia(e, cod => (UD.by(cod) || {}).nombre);
+      if (sin) return enviar(res, 409, { error: sin.mensaje + (f.pago === 'paypal' ? ' Tu pago en PayPal Sandbox quedó registrado; la tienda lo reembolsará.' : ''), sinExistencia: sin });
+      console.error('emitir_factura', e.message);
+      return enviar(res, 503, { error: 'No pudimos registrar la factura en este momento. Inténtalo de nuevo en unos minutos.' });
+    }
+  } else {
+    /* Sin base de datos: número de control derivado de la hora de emisión. */
+    f.control = 'DTE-01-UD01P001-' + String(Date.now()).padStart(15, '0');
+  }
 
   let email;
   try { email = await enviarCorreo(f); } catch (e) { console.error('correo', e); email = { enviado: false, motivo: 'No se pudo enviar el correo en este momento.' }; }
-  enviar(res, 200, { factura: f, email });
+  if (email.enviado && f.id) db.marcarCorreoEnviado(f.id).catch(e => console.error('marcar correo', e.message));
+  delete f.id;
+  enviar(res, 200, { factura: f, email, existencias });
 };
