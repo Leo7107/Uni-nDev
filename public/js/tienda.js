@@ -179,7 +179,7 @@
     if (vista.cant > Math.max(1, max)) vista.cant = Math.max(1, max);
     var disp = base
       ? (max > 0 ? '<i></i><div><b>' + (p.stock - enCarroBase(p.cod)) + (p.stock - enCarroBase(p.cod) === 1 ? ' unidad disponible' : ' unidades disponibles') + '</b><br><span>Entrega inmediata en tienda o a domicilio.</span></div>'
-                 : '<i class="no"></i><div><b>Agotado por ahora</b><br><span>' + (enCarroBase(p.cod) ? 'Ya tienes en tu carrito todas las unidades disponibles.' : 'Pregúntanos por la fecha de reposición.') + '</span></div>')
+                 : '<i class="no"></i><div><b>Agotado por ahora</b><br><span>' + (p.stock > 0 && enCarroBase(p.cod) ? 'Ya tienes en tu carrito todas las unidades disponibles.' : 'Pregúntanos por la fecha de reposición' + (grupos(p).length ? ' o elige una versión por encargo.' : '.')) + '</span></div>')
       : '<i class="encargo"></i><div><b>Por encargo</b><br><span>Esta versión llega en 5 a 7 días hábiles. El precio ya incluye el IVA.</span></div>';
     var gs = grupos(p).map(function (gr, k) {
       var sel = opcion(gr, vista.sel[k]);
@@ -262,6 +262,7 @@
           var l = carro[k], p = by(l.cod), pr = precioDe(p, l.sel), fotos = galeria(p, l.sel), vn = nombreVar(p, l.sel);
           var max = esBase(l.sel) ? p.stock : 5;
           return '<div class="item"><a class="mini" href="/producto/' + p.cod + '" data-cerrar-panel aria-label="Ver ' + esc(p.nombre) + '">' + vis(p, fotos[0]) + '</a><div><b>' + esc(p.nombre) + '</b>' + (vn ? '<span class="var">' + esc(vn) + (esBase(l.sel) ? '' : ' · por encargo') + '</span>' : '') +
+            (esBase(l.sel) && l.q > p.stock ? '<span class="var" style="color:var(--accent)">' + (p.stock === 0 ? 'Agotado: quítalo para pagar' : 'Solo quedan ' + p.stock) + '</span>' : '') +
             '<span class="q"><button type="button" data-menos="' + k + '" aria-label="Quitar una"' + (l.q <= 1 ? ' disabled' : '') + '>−</button><span>' + l.q + '</span><button type="button" data-mas1="' + k + '" aria-label="Agregar una"' + (l.q >= max ? ' disabled' : '') + '>+</button></span></div>' +
             '<div class="v">' + money(r2(pr.tot * l.q)) + '<button type="button" data-quitar="' + k + '">Quitar</button></div></div>';
         }).join('') + '</div>' +
@@ -408,7 +409,7 @@
   function confirmar() {
     if (validarTodo()) { pintarPagar('Revisa los datos marcados en rojo para continuar.'); var f = $('[aria-invalid="true"]'); if (f) f.focus(); return; }
     var c = cuenta();
-    for (var i0 = 0; i0 < c.ls.length; i0++) { var x0 = c.ls[i0]; if (esBase(x0.l.sel) && x0.l.q > x0.p.stock) { pintarPagar('Solo quedan ' + x0.p.stock + ' unidades de ' + x0.p.nombre + '. Ajusta la cantidad en tu carrito.'); return; } }
+    for (var i0 = 0; i0 < c.ls.length; i0++) { var x0 = c.ls[i0]; if (esBase(x0.l.sel) && x0.l.q > x0.p.stock) { pintarPagar(x0.p.stock === 0 ? 'Se agotó ' + x0.p.nombre + '. Quítalo del carrito para continuar.' : 'Solo quedan ' + x0.p.stock + ' unidades de ' + x0.p.nombre + '. Ajusta la cantidad en tu carrito.'); return; } }
     if (chk.pago === 'tarjeta') { pagarConTarjeta(c); return; }
     emitir({ pago: chk.pago });
   }
@@ -433,13 +434,13 @@
       chk.tnum = chk.tnom = chk.texp = chk.tcvv = '';
       ultimaFactura = r.factura; ultimoEmail = r.email || null;
       try { localStorage.setItem('ud-factura', JSON.stringify(r.factura)); localStorage.setItem('ud-email', JSON.stringify(ultimoEmail)); } catch (e) {}
-      /* Descuenta del inventario local las unidades de la versión en existencia (el inventario compartido llega con la base de datos). */
-      c.ls.forEach(function (x) { if (esBase(x.l.sel)) x.p.stock -= x.l.q; });
-      guardarStock();
+      /* Existencias que devolvió la base de datos; sin base de datos, se descuentan en este navegador. */
+      if (r.existencias) aplicarExistencias(r.existencias); else c.ls.forEach(function (x) { if (esBase(x.l.sel)) x.p.stock = Math.max(0, x.p.stock - x.l.q); });
       carro = {}; guardar(); pintarPanel(); pintarTienda();
       navegar('/factura');
     }, function (e) {
       pasCerrar();
+      cargarInventario();
       pintarPagar(e.message === 'Failed to fetch' ? 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo; no se emitió ninguna factura.' : e.message);
     });
   }
@@ -519,8 +520,17 @@
       aprobar();
     }, 1400);
   }
-  function guardarStock() { try { var o = {}; P.forEach(function (p) { o[p.cod] = p.stock; }); localStorage.setItem('ud-stock', JSON.stringify(o)); } catch (e) {} }
-  try { var s0 = JSON.parse(localStorage.getItem('ud-stock') || 'null'); if (s0) P.forEach(function (p) { if (typeof s0[p.cod] === 'number' && s0[p.cod] >= 0 && s0[p.cod] <= p.stock) p.stock = s0[p.cod]; }); } catch (e) {}
+  /* Inventario compartido: lo lee del servidor (Supabase) al abrir la tienda y después de cada compra. */
+  function aplicarExistencias(ex) {
+    var cambio = false;
+    P.forEach(function (p) { if (typeof ex[p.cod] === 'number' && ex[p.cod] !== p.stock) { p.stock = Math.max(0, ex[p.cod]); cambio = true; } });
+    if (!cambio) return;
+    pintarTienda(); pintarPanel();
+    if (vistaActual === 'v-producto' && vista.cod) { pintarCompra(); pintarSpecs(); }
+  }
+  function cargarInventario() {
+    fetch('/api/inventario').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { if (d && d.existencias) aplicarExistencias(d.existencias); }, function () {});
+  }
 
   /* ---------- factura de consumidor final ---------- */
   var ultimaFactura = null, ultimoEmail = null;
@@ -617,7 +627,7 @@
   });
   window.addEventListener('popstate', ruta);
 
-  pintarTienda(); pintarPanel(); ruta();
+  pintarTienda(); pintarPanel(); ruta(); cargarInventario();
   $$('#v-tienda .fila').forEach(function (f) { f.addEventListener('scroll', function () { actFlechas(f); }, { passive: true }); });
   window.addEventListener('resize', function () { $$('.fila').forEach(actFlechas); });
 })();

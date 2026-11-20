@@ -13,6 +13,7 @@ if (fs.existsSync(envFile)) {
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.png': 'image/png', '.xml': 'application/xml', '.txt': 'text/plain' };
 const API = {
   '/api/config': require('../api/config.js'),
+  '/api/inventario': require('../api/inventario.js'),
   '/api/pedido': require('../api/pedido.js'),
   '/api/paypal/orden': require('../api/paypal/orden.js'),
   '/api/paypal/capturar': require('../api/paypal/capturar.js')
