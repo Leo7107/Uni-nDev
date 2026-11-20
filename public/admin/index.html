@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Administración · UniónDev</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 208 241">
+    <path fill="#1f4fd8" d="M0 0H48V137A56 56 0 0 0 160 137V114H208V137A104 104 0 0 1 0 137Z"/>
+    <rect fill="#e8591c" x="160" y="0" width="48" height="96"/>
+  </symbol>
+</svg>
+
+<!-- Inicio de sesión -->
+<main id="v-login" class="login" hidden>
+  <form id="form-login" class="login-caja" novalidate>
+    <div class="marca"><svg viewBox="0 0 208 241" aria-hidden="true"><use href="#logo"/></svg><span>Unión<b>Dev</b></span></div>
+    <h1>Administración</h1>
+    <p class="sub">Inventario, ventas y contabilidad de la tienda.</p>
+    <label for="l-correo">Correo</label>
+    <input id="l-correo" type="email" autocomplete="username" required>
+    <label for="l-clave">Contraseña</label>
+    <input id="l-clave" type="password" autocomplete="current-password" required>
+    <p class="err" id="l-err" role="alert" hidden></p>
+    <button class="btn" type="submit" id="l-btn">Iniciar sesión</button>
+    <a class="volver" href="/">Volver a la tienda</a>
+  </form>
+</main>
+
+<!-- Panel -->
+<div id="v-panel" class="panel" hidden>
+  <header class="top">
+    <a class="marca" href="/admin"><svg viewBox="0 0 208 241" aria-hidden="true"><use href="#logo"/></svg><span>Unión<b>Dev</b></span><em>Administración</em></a>
+    <div class="top-der"><span id="quien"></span><a href="/" target="_blank" rel="noopener">Ver tienda</a><button class="btn sec chico" type="button" id="salir">Cerrar sesión</button></div>
+  </header>
+  <nav class="tabs" aria-label="Secciones">
+    <a href="#resumen" data-tab="resumen">Resumen</a>
+    <a href="#inventario" data-tab="inventario">Inventario</a>
+    <a href="#ventas" data-tab="ventas">Ventas</a>
+    <a href="#libro" data-tab="libro">Libro de ventas</a>
+  </nav>
+  <main class="contenido" id="contenido" tabindex="-1"></main>
+</div>
+
+<dialog id="dlg" class="dlg" aria-labelledby="dlg-t"></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="/admin/admin.js" defer></script>
+</body>
+</html>

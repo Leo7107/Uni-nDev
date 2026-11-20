@@ -40,4 +40,18 @@ function errorExistencia(e, nombrePorCod) {
   return { cod: m[1], disponible: n, mensaje: n === 0 ? `Se acaba de vender la última unidad de ${nombre}. Quítalo del carrito o elige la versión por encargo.` : `Solo quedan ${n} unidades de ${nombre}. Ajusta la cantidad en tu carrito.` };
 }
 
-module.exports = { configurada, emitirFactura, existencias, marcarCorreoEnviado, errorExistencia };
+/* Genéricos para el panel: lectura por la API REST y llamada a funciones. */
+function leer(ruta) { return pedir(ruta, { method: 'GET' }); }
+function rpc(nombre, args) { return pedir('/rpc/' + nombre, { method: 'POST', body: JSON.stringify(args || {}) }); }
+
+/* Supabase Auth: inicio de sesión con correo y contraseña, y verificación del token del administrador. */
+async function auth(ruta, opciones) {
+  const r = await fetch(URL_BASE + '/auth/v1' + ruta, { ...opciones, headers: { apikey: CLAVE, 'Content-Type': 'application/json', ...((opciones && opciones.headers) || {}) } });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.msg || d.error_description || d.message || ('Auth respondió ' + r.status)); e.status = r.status; throw e; }
+  return d;
+}
+function iniciarSesion(correo, clave) { return auth('/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: correo, password: clave }) }); }
+function usuarioDelToken(token) { return auth('/user', { method: 'GET', headers: { Authorization: 'Bearer ' + token } }); }
+
+module.exports = { configurada, emitirFactura, existencias, marcarCorreoEnviado, errorExistencia, leer, rpc, iniciarSesion, usuarioDelToken };
