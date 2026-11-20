@@ -1,0 +1,12 @@
+node_modules/
+.env
+.vercel/
+
+# Archivos generados por `npm run build` (Vercel los crea al desplegar)
+public/index.html
+public/producto/
+public/sitemap.xml
+public/robots.txt
+public/js/datos.js
+public/js/factura.js
+public/js/logo.js

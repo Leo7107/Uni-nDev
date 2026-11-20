@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--SEO:CABECERA-->
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/css/tienda.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 208 241">
+    <path style="fill:var(--logo-u)" d="M0 0H48V137A56 56 0 0 0 160 137V114H208V137A104 104 0 0 1 0 137Z"/>
+    <rect style="fill:var(--logo-a)" x="160" y="0" width="48" height="96"/>
+  </symbol>
+</svg>
+
+<header class="top"><div class="wrap">
+  <a class="marca" href="/" aria-label="UniónDev, inicio"><svg viewBox="0 0 208 241"><use href="#logo"/></svg><span>Unión<b>Dev</b></span></a>
+  <nav class="menu" aria-label="Categorías">
+    <a href="#laptops" data-cat-ir="Laptops">Laptops</a><a href="#laptops" data-cat-ir="Tablets">Tablets</a><a href="#escritorio" data-cat-ir="Monitores">Monitores</a><a href="#escritorio" data-cat-ir="Teclados">Teclados y mouse</a><a href="#escritorio" data-cat-ir="Audio y video">Audio</a><a href="#conecta" data-cat-ir="Impresoras">Impresoras</a><a href="#conecta" data-cat-ir="Almacenamiento">Almacenamiento</a><a href="#conecta" data-cat-ir="Redes">Redes</a><a href="#conecta" data-cat-ir="Energía">Energía</a>
+  </nav>
+  <button class="bolsa" id="abrir-bolsa" type="button" aria-label="Abrir carrito"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span class="n" id="n" hidden>0</span></button>
+</div></header>
+
+<main>
+  <div id="v-tienda">
+    <div class="wrap cab" id="inicio">
+      <h1>Tienda.<span>Tu próxima computadora, con el IVA ya incluido.</span></h1>
+      <div class="ayuda"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 10.5h6M9 13.5h4"/></svg></div><p><b>¿Dudas antes de comprar?</b>Un vendedor te asesora en nuestra tienda de San Salvador.</p></div>
+    </div>
+    <nav class="cats" id="cats" aria-label="Ir a una categoría"></nav>
+    <section class="estante" id="laptops"><div class="wrap"><h2><b>Lo último.</b> <span>Laptops y tablets para estudiar, trabajar o jugar.</span></h2></div><div class="fila" data-fila="laptops"></div><div class="wrap flechas" data-flechas="laptops"></div></section>
+    <section class="estante" id="escritorio"><div class="wrap"><h2><b>Arma tu escritorio.</b> <span>Monitores, teclados, mouse y audio.</span></h2></div><div class="fila" data-fila="escritorio"></div><div class="wrap flechas" data-flechas="escritorio"></div></section>
+    <section class="estante" id="conecta"><div class="wrap"><h2><b>Imprime, guarda y conecta.</b> <span>Lo que tu casa u oficina necesita.</span></h2></div><div class="fila" data-fila="conecta"></div><div class="wrap flechas" data-flechas="conecta"></div></section>
+    <section class="estante" id="porque"><div class="wrap"><h2><b>Comprar en UniónDev.</b> <span>Claro desde el primer clic.</span></h2></div><div class="fila" data-fila="porque"></div><div class="wrap flechas" data-flechas="porque"></div></section>
+  </div>
+
+  <div id="v-producto" hidden></div>
+  <div id="v-pagar" hidden></div>
+  <div id="v-factura" hidden></div>
+</main>
+
+<footer><div class="wrap"><span>UNIONDEV, S.A. de C.V. · Computadoras y periféricos · San Salvador, El Salvador</span><span>Precios en dólares con IVA incluido · Proyecto académico de Técnicas Contables</span></div></footer>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="panel" id="panel" aria-label="Carrito" aria-hidden="true"></aside>
+<div class="toast" id="toast" role="status" hidden></div>
+<dialog class="pasarela" id="pasarela" aria-label="Pago con tarjeta"></dialog>
+<!--SEO:CONTENIDO-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="/js/datos.js" defer></script>
+<script src="/js/factura.js" defer></script>
+<script src="/js/logo.js" defer></script>
+<script src="/js/tienda.js" defer></script>
+</body>
+</html>
