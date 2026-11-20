@@ -225,6 +225,10 @@ revoke all on productos, facturas, factura_detalle, kardex from anon, authentica
 revoke all on libro_ventas_cf, resumen_ventas_mensual, inventario_valorizado from anon, authenticated;
 revoke all on function emitir_factura(jsonb) from public, anon, authenticated;
 revoke all on function existencias() from public, anon, authenticated;
+-- Permisos explícitos para el servidor (el proyecto se crea sin "conceder acceso API a nuevas tablas automáticamente").
+grant usage on schema public to service_role;
+grant select, insert, update, delete on productos, facturas, factura_detalle, kardex to service_role;
+grant select on libro_ventas_cf, resumen_ventas_mensual, inventario_valorizado to service_role;
 grant execute on function emitir_factura(jsonb) to service_role;
 grant execute on function existencias() to service_role;
 grant usage, select on sequence factura_correlativo to service_role;
