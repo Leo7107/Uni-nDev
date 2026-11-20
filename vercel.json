@@ -4,10 +4,31 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/pagar", "destination": "/index.html" },
-    { "source": "/factura", "destination": "/index.html" }
+    {
+      "source": "/pagar",
+      "destination": "/"
+    },
+    {
+      "source": "/factura",
+      "destination": "/"
+    }
   ],
   "headers": [
-    { "source": "/img/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
+    {
+      "source": "/img/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin/",
+      "destination": "/admin",
+      "permanent": true
+    }
   ]
 }
