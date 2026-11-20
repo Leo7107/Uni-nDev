@@ -52,5 +52,5 @@ for (const p of UD.P) {
 const hoy = new Date().toISOString().slice(0, 10);
 fs.writeFileSync(path.join(PUB, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   [`${SITE}/`].concat(UD.P.map(p => `${SITE}/producto/${p.cod}`)).map(u => `  <url><loc>${u}</loc><lastmod>${hoy}</lastmod></url>`).join('\n') + '\n</urlset>\n');
-fs.writeFileSync(path.join(PUB, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /pagar\nDisallow: /factura\nDisallow: /api/\nSitemap: ${SITE}/sitemap.xml\n`);
+fs.writeFileSync(path.join(PUB, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /pagar\nDisallow: /factura\nDisallow: /admin\nDisallow: /api/\nSitemap: ${SITE}/sitemap.xml\n`);
 console.log('Sitio compilado:', UD.P.length, 'páginas de producto ·', SITE);
