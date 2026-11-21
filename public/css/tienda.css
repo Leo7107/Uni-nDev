@@ -1,6 +1,7 @@
 /* Layout: tienda por estantes (filas deslizables de tarjetas grandes) + página de producto
    con galería a la izquierda y columna de compra fija a la derecha; debajo, descripción, especificaciones y recomendados. */
 :root {
+  --ancho: 1560px;
   --bg: #f4f5f7;
   --card: #ffffff;
   --fg: #16181d;
@@ -33,7 +34,7 @@ p { margin: 0; }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
-.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: var(--ancho); margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
 img { max-width: 100%; }
 
 /* encabezado */
@@ -65,7 +66,7 @@ img { max-width: 100%; }
 .ayuda p { font-size: 14px; color: var(--muted); line-height: 1.4; }
 .ayuda b { color: var(--fg); font-weight: 600; display: block; }
 
-.cats { display: flex; gap: 8px; overflow-x: auto; padding: 4px max(20px, env(safe-area-inset-left, 0px)) 18px; scroll-snap-type: x proximity; scrollbar-width: none; max-width: 1240px; margin: 0 auto; }
+.cats { display: flex; gap: 8px; overflow-x: auto; padding: 4px max(20px, env(safe-area-inset-left, 0px)) 18px; scroll-snap-type: x proximity; scrollbar-width: none; max-width: var(--ancho); margin: 0 auto; }
 .cats::-webkit-scrollbar { display: none; }
 .cat { flex: none; width: 112px; border: 0; background: none; padding: 6px 4px; display: grid; justify-items: center; gap: 8px; scroll-snap-align: start; border-radius: 14px; }
 .cat:hover { background: var(--card); }
@@ -78,9 +79,9 @@ img { max-width: 100%; }
 .estante h2 b, .bloque h2 b { color: var(--brand); font-weight: 800; }
 .estante h2 span, .bloque h2 span { color: var(--muted); }
 .fila { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 28px 0 34px; scrollbar-width: none;
-  padding-left: max(20px, calc((100vw - 1240px) / 2 + 20px)); scroll-padding-left: max(20px, calc((100vw - 1240px) / 2 + 20px)); }
+  padding-left: max(20px, calc((100vw - var(--ancho)) / 2 + 20px)); scroll-padding-left: max(20px, calc((100vw - var(--ancho)) / 2 + 20px)); }
 .fila::-webkit-scrollbar { display: none; }
-.fila::after { content: ""; flex: 0 0 max(4px, calc((100vw - 1240px) / 2 + 4px)); }
+.fila::after { content: ""; flex: 0 0 max(4px, calc((100vw - var(--ancho)) / 2 + 4px)); }
 .flechas { display: flex; justify-content: flex-end; gap: 12px; margin-top: -10px; }
 .flecha { width: 40px; height: 40px; border-radius: 999px; border: 0; background: var(--btn-soft); display: grid; place-items: center; }
 .flecha:hover { background: var(--btn-soft-hover); }
@@ -381,3 +382,5 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 .oferta-g b { color: var(--accent); font-weight: 600; }
 .precio-g .ahorro, .item .ahorro { color: var(--accent); font-weight: 600; }
 .desc-l { color: var(--muted); }
+
+[hidden] { display: none !important; }

@@ -93,9 +93,6 @@
       html.splice(Math.min(e.promo.pos, html.length), 0, promo(e.promo));
       $('[data-fila="' + k + '"]').innerHTML = html.join('');
     });
-    $('[data-fila="porque"]').innerHTML = RAZONES.map(function (r) {
-      return '<article class="razon"><span class="ic"><svg viewBox="0 0 24 24" style="stroke:' + r[3] + '" aria-hidden="true">' + r[2] + '</svg></span><h3>' + esc(r[0]) + '</h3><p>' + esc(r[1]) + '</p></article>';
-    }).join('');
     $('#cats').innerHTML = CATS.map(function (c) {
       var ej = P.filter(function (p) { return p.cat === c[0]; })[0];
       return '<button class="cat" type="button" data-cat-ir="' + esc(c[0]) + '">' + vis(ej) + '<span>' + (c[0] === 'Audio y video' ? 'Audio' : esc(c[0])) + '</span></button>';
