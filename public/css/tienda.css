@@ -118,9 +118,16 @@ img { max-width: 100%; }
 .promo:hover .arte img.on { transform: translate(-50%, -6px) scale(1.03); }
 .promo .ir { position: absolute; right: 22px; bottom: 22px; width: 40px; height: 40px; border-radius: 99px; border: 0; background: #ffffff; color: #16181d; box-shadow: 0 2px 8px rgba(20, 24, 32, .1); display: grid; place-items: center; }
 .promo .ir svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.p-gaming { background: #ebe5ff; --pc: #5b35d5; }
-.p-escritorio { background: #ddf3ee; --pc: #0f7d71; }
-.p-energia { background: #dff0f7; --pc: #0a7aa3; }
+/* tarjetas destacadas: fondo oscuro con luz de color (contraste como en Apple Store) */
+.promo { background: radial-gradient(70% 50% at 50% 74%, var(--luz), transparent 70%), linear-gradient(180deg, #11131c, #08090d); color: #fff; }
+.promo .tx small { color: var(--pc); }
+.promo h3 { color: #fff; }
+.promo p { color: rgba(255, 255, 255, .72); }
+.promo .arte img { mix-blend-mode: normal; width: auto; max-width: 70%; max-height: min(220px, calc(100% - 56px)); bottom: 40px; filter: drop-shadow(0 22px 24px rgba(0, 0, 0, .5)); }
+.promo:hover { box-shadow: 2px 4px 16px rgba(0, 0, 0, .28); }
+.p-gaming { --luz: rgba(124, 77, 255, .55); --pc: #b9a4ff; }
+.p-escritorio { --luz: rgba(31, 79, 216, .62); --pc: #9db8ff; }
+.p-energia { --luz: rgba(217, 83, 26, .55); --pc: #ffb08a; }
 
 
 /* ---------- página de producto ---------- */

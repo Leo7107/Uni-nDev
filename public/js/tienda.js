@@ -80,10 +80,12 @@
     return o.desc ? '<span class="precio oferta">' + money(o.tot) + ' <s>' + money(o.normal) + '</s><small>IVA incluido · ahorras ' + money(o.desc) + '</small></span>'
       : '<span class="precio">' + money(p.precio) + '<small>IVA incluido</small></span>';
   }
+  /* Fotos sin fondo (public/img/sf) para las tarjetas destacadas oscuras. */
+  var SIN_FONDO = ['LAP-006', 'TEC-004', 'MOU-003', 'AUD-001', 'MON-001', 'TEC-001', 'MOU-001', 'ENE-001'];
   var SECUENCIA = { 'LAP-006': ['LAP-006', 'TEC-004', 'MOU-003', 'AUD-001'], 'MON-001': ['MON-001', 'TEC-001', 'MOU-001'], 'ENE-001': ['ENE-001', 'ENE-002'] };
   function fotosPromo(pr) {
-    var cods = (SECUENCIA[pr.foto] || [pr.foto]).filter(function (c) { return c === pr.foto || tieneFoto(by(c)); });
-    return cods.map(function (c, k) { var p = by(c), src = (p && p.foto) || '/img/' + c + '.webp'; return '<img class="' + (k ? '' : 'on') + '" src="' + src + '" alt="" loading="lazy" decoding="async">'; }).join('');
+    var cods = (SECUENCIA[pr.foto] || [pr.foto]).filter(function (c) { return SIN_FONDO.indexOf(c) >= 0 || c === pr.foto; });
+    return cods.map(function (c, k) { var p = by(c), src = SIN_FONDO.indexOf(c) >= 0 ? '/img/sf/' + c + '.webp' : (p && p.foto) || '/img/' + c + '.webp'; return '<img class="' + (k ? '' : 'on') + '" src="' + src + '" alt="" loading="lazy" decoding="async">'; }).join('');
   }
   /* Turna las fotos de las tarjetas destacadas que están a la vista. */
   var turnoT = null;
