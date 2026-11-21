@@ -97,13 +97,32 @@ const ACCIONES = {
     const ruta = carpeta + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + tipos[b.tipo];
     return { url: await db.subirFoto(ruta, buf, b.tipo) };
   },
+  /* ---------- promociones ---------- */
+  async promociones() { return db.leer('/promociones?select=*&order=inicio.desc&limit=200'); },
+  async promocion_guardar(q, b) {
+    const tipo = b.tipo === 'monto' ? 'monto' : 'porcentaje', valor = Math.round(Number(b.valor) * 100) / 100;
+    if (!(valor > 0) || (tipo === 'porcentaje' && valor >= 100) || valor > 100000) throw new Error(tipo === 'porcentaje' ? 'El descuento debe ser mayor que 0 % y menor que 100 %.' : 'El descuento debe ser mayor que $0.');
+    const alcance = ['producto', 'categoria', 'todo'].includes(b.alcance) ? b.alcance : null;
+    if (!alcance) throw new Error('Elige a qué aplica la promoción.');
+    const objetivo = alcance === 'todo' ? '' : String(b.objetivo || '');
+    if (alcance === 'producto' && !COD.test(objetivo)) throw new Error('Elige el producto.');
+    if (alcance === 'categoria' && !CATEGORIAS.includes(objetivo)) throw new Error('Elige la categoría.');
+    const inicio = new Date(b.inicio), fin = new Date(b.fin);
+    if (isNaN(inicio) || isNaN(fin)) throw new Error('Revisa las fechas de inicio y fin.');
+    if (fin <= inicio) throw new Error('La fecha de fin debe ser posterior al inicio.');
+    const datos = { nombre: texto(b.nombre, 80, 'el nombre de la promoción', 3), tipo, valor, alcance, objetivo, inicio: inicio.toISOString(), fin: fin.toISOString(), activa: b.activa !== false };
+    const id = parseInt(b.id, 10);
+    const r = id > 0 ? await db.actualizar('/promociones?id=eq.' + id, datos) : await db.insertar('/promociones', datos);
+    if (!r || !r.length) throw new Error('No se encontró la promoción.');
+    return r[0];
+  },
   async libro(q) {
     const mes = /^\d{4}-\d{2}$/.test(q.mes || '') ? q.mes : new Date().toISOString().slice(0, 7);
     const [y, m] = mes.split('-').map(Number); const fin = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
     return db.leer(`/libro_ventas_cf?select=*&dia=gte.${mes}-01&dia=lt.${fin}&order=dia.asc`);
   }
 };
-const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir']);
+const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir', 'promocion_guardar']);
 
 /* Valida y limpia la ficha de un producto que llega del panel. Lanza Error con un mensaje claro. */
 const CATEGORIAS = UD.CATS.map(c => c[0]);

@@ -49,10 +49,14 @@
     var q = p.stock - enCarroBase(p.cod);
     if (q <= 0) return 'Agotado por ahora';
     if (q === 1) return 'Última unidad';
+    var o = precioBase(p); if (o.promo) return 'Oferta ' + rebaja(o.promo);
     if (grupos(p).some(function (gr) { return gr.color; })) return 'Más colores';
     if (p.gaming) return 'Gaming';
     return '';
   }
+  function precioBase(p) { return precioDe(p, grupos(p).map(function () { return 0; })); }
+  function rebaja(pr) { return pr.tipo === 'porcentaje' ? '−' + Number(pr.valor) + ' %' : '−' + money(Number(pr.valor)); }
+  function hasta(iso) { try { return new Date(iso).toLocaleDateString('es-SV', { timeZone: 'America/El_Salvador', day: 'numeric', month: 'long' }); } catch (e) { return ''; } }
   function agregar(cod, sel, cant) {
     var p = by(cod), k = clave(cod, sel), n = Math.min(cant || 1, maxPara(p, sel));
     if (n <= 0) return 0;
@@ -68,8 +72,13 @@
     return '<article class="tarjeta" data-cod="' + p.cod + '" data-cat="' + esc(p.cat) + '">' +
       '<a class="abrir" href="/producto/' + p.cod + '" aria-label="Ver ' + esc(p.nombre) + '"><span class="arte">' + vis(p) + '</span>' +
       '<span class="etq">' + etiqueta(p) + '</span><h3>' + esc(p.nombre) + '</h3><span class="sp">' + esc(p.sp) + '</span></a>' +
-      '<div class="pie"><span class="precio">' + money(p.precio) + '<small>IVA incluido</small></span>' +
+      '<div class="pie">' + precioTarjeta(p) +
       '<button class="mas" type="button" data-add="' + p.cod + '" aria-label="Agregar ' + esc(p.nombre) + ' al carrito"' + (q <= 0 ? ' disabled' : '') + '>' + PLUS + '</button></div></article>';
+  }
+  function precioTarjeta(p) {
+    var o = precioBase(p);
+    return o.desc ? '<span class="precio oferta">' + money(o.tot) + ' <s>' + money(o.normal) + '</s><small>IVA incluido · ahorras ' + money(o.desc) + '</small></span>'
+      : '<span class="precio">' + money(p.precio) + '<small>IVA incluido</small></span>';
   }
   function promo(pr) {
     var accion = pr.ir ? '<a class="ir" href="#' + pr.ir + '" aria-label="Ir a ' + esc(pr.sub) + '">' + ARROW + '</a>'
@@ -199,7 +208,7 @@
     $('#compra').innerHTML =
       '<span class="etq">' + (etiqueta(p) || esc(p.marca)) + '</span>' +
       '<h1>' + esc(p.nombre) + '</h1><p class="res">' + esc(p.sp) + '</p>' +
-      '<div class="precio-g"><strong>' + money(pr.tot) + '</strong><span>IVA incluido · Precio sin IVA ' + money(pr.sin) + ' · IVA (13 %) ' + money(pr.iva) + '</span></div>' +
+      '<div class="precio-g">' + (pr.promo ? '<p class="oferta-g"><b>' + esc(pr.promo.nombre) + ' · ' + rebaja(pr.promo) + '</b> hasta el ' + hasta(pr.promo.fin) + '</p>' : '') + '<strong>' + money(pr.tot) + (pr.desc ? ' <s>' + money(pr.normal) + '</s>' : '') + '</strong>' + (pr.desc ? '<span class="ahorro">Ahorras ' + money(pr.desc) + '</span>' : '') + '<span>IVA incluido · Precio sin IVA ' + money(pr.sin) + ' · IVA (13 %) ' + money(pr.iva) + '</span></div>' +
       gs +
       '<div class="disp">' + disp + '</div>' +
       '<div class="accion"><div class="cant" aria-label="Cantidad"><button type="button" data-cant="-1" aria-label="Menos"' + (vista.cant <= 1 ? ' disabled' : '') + '>−</button><span>' + vista.cant + '</span><button type="button" data-cant="1" aria-label="Más"' + (vista.cant >= max ? ' disabled' : '') + '>+</button></div>' +
@@ -262,6 +271,7 @@
           var l = carro[k], p = by(l.cod), pr = precioDe(p, l.sel), fotos = galeria(p, l.sel), vn = nombreVar(p, l.sel);
           var max = esBase(l.sel) ? p.stock : 5;
           return '<div class="item"><a class="mini" href="/producto/' + p.cod + '" data-cerrar-panel aria-label="Ver ' + esc(p.nombre) + '">' + vis(p, fotos[0]) + '</a><div><b>' + esc(p.nombre) + '</b>' + (vn ? '<span class="var">' + esc(vn) + (esBase(l.sel) ? '' : ' · por encargo') + '</span>' : '') +
+            (pr.desc ? '<span class="var ahorro">' + esc(pr.promo.nombre) + ' · ahorras ' + money(r2(pr.desc * l.q)) + '</span>' : '') +
             (esBase(l.sel) && l.q > p.stock ? '<span class="var" style="color:var(--accent)">' + (p.stock === 0 ? 'Agotado: quítalo para pagar' : 'Solo quedan ' + p.stock) + '</span>' : '') +
             '<span class="q"><button type="button" data-menos="' + k + '" aria-label="Quitar una"' + (l.q <= 1 ? ' disabled' : '') + '>−</button><span>' + l.q + '</span><button type="button" data-mas1="' + k + '" aria-label="Agregar una"' + (l.q >= max ? ' disabled' : '') + '>+</button></span></div>' +
             '<div class="v">' + money(r2(pr.tot * l.q)) + '<button type="button" data-quitar="' + k + '">Quitar</button></div></div>';
@@ -550,7 +560,7 @@
           (f.cliente.dui ? '<div><small>DUI</small>' + esc(f.cliente.dui) + '</div>' : '') + (f.cliente.tel ? '<div><small>Teléfono</small>' + esc(f.cliente.tel) + '</div>' : '') +
           '<div><small>Condición de la operación</small>' + esc(condicion(f)) + '</div><div><small>Entrega</small>' + (dom ? esc(f.dir) + ', ' + esc(f.municipio) : 'Recoger en tienda') + '</div></div>' +
         '<table><thead><tr><th>Cant.</th><th>Descripción</th><th class="r">Precio unitario</th><th class="r">Ventas gravadas</th></tr></thead><tbody>' +
-          f.items.map(function (it) { return '<tr><td>' + it.q + '</td><td>' + esc(it.desc) + '<small>' + esc(it.cod) + (it.ver ? ' · ' + esc(it.ver) : '') + (it.encargo ? ' · por encargo' : '') + '</small></td><td class="r">' + money(it.pu) + '</td><td class="r">' + money(it.tot) + '</td></tr>'; }).join('') +
+          f.items.map(function (it) { return '<tr><td>' + it.q + '</td><td>' + esc(it.desc) + '<small>' + esc(it.cod) + (it.ver ? ' · ' + esc(it.ver) : '') + (it.encargo ? ' · por encargo' : '') + '</small>' + (it.descuento ? '<small class="desc-l">Precio normal ' + money(it.normal) + ' · descuento ' + money(it.descuento) + (it.promo ? ' (' + esc(it.promo) + ')' : '') + '</small>' : '') + '</td><td class="r">' + money(it.pu) + '</td><td class="r">' + money(it.tot) + '</td></tr>'; }).join('') +
         '</tbody></table>' +
         '<div class="doc-pie"><p class="doc-letras">Son:<b>' + enLetras(f.total) + '</b></p><div class="doc-sumas"><div><span>Sumas</span><span>' + money(f.total) + '</span></div><div><span>Ventas exentas</span><span>$0.00</span></div><div><span>Ventas no sujetas</span><span>$0.00</span></div><div class="tot"><span>Total a pagar</span><span>' + money(f.total) + '</span></div><div class="muted"><span>IVA incluido (13 %)</span><span>' + money(f.iva) + '</span></div><div class="muted"><span>Valor sin IVA</span><span>' + money(f.gravadas) + '</span></div></div></div>' +
         '<p class="doc-leg">En la factura de consumidor final los precios incluyen el IVA. Documento de muestra de un proyecto académico: no tiene validez fiscal ante el Ministerio de Hacienda.</p>' +
@@ -638,7 +648,7 @@
   }
   function cargarCatalogo() {
     fetch('/api/catalogo').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      if (d && d.productos && d.productos.length) usarCatalogo(window.UDDatos.desdeFilas(d.productos));
+      if (d && d.productos && d.productos.length) usarCatalogo(window.UDDatos.desdeFilas(d.productos, d.promociones || []));
     }, function () {});
   }
 

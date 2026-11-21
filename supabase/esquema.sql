@@ -66,6 +66,9 @@ create table if not exists factura_detalle (
   iva              numeric(12,2) not null,
   costo_unitario   numeric(12,2) not null default 0,
   costo_total      numeric(12,2) not null default 0,
+  precio_normal    numeric(12,2),
+  descuento        numeric(12,2) not null default 0,
+  promocion        text not null default '',
   unique (factura_id, linea)
 );
 create index if not exists factura_detalle_cod_idx on factura_detalle (cod);
@@ -151,9 +154,10 @@ begin
         existencias := existencias || jsonb_build_object(prod.cod, prod.existencia);
       end if;
     end if;
-    insert into factura_detalle (factura_id, linea, cod, descripcion, version, por_encargo, cantidad, precio_unitario, total, ventas_netas, iva, costo_unitario, costo_total)
+    insert into factura_detalle (factura_id, linea, cod, descripcion, version, por_encargo, cantidad, precio_unitario, total, ventas_netas, iva, costo_unitario, costo_total, precio_normal, descuento, promocion)
     values (v_id, n, it->>'cod', it->>'desc', coalesce(it->>'ver', ''), coalesce((it->>'encargo')::boolean, false), (it->>'q')::int,
-            (it->>'pu')::numeric, (it->>'tot')::numeric, (it->>'sin')::numeric, (it->>'iva')::numeric, c_unit, round(c_unit * (it->>'q')::int, 2));
+            (it->>'pu')::numeric, (it->>'tot')::numeric, (it->>'sin')::numeric, (it->>'iva')::numeric, c_unit, round(c_unit * (it->>'q')::int, 2),
+            coalesce((it->>'normal')::numeric, (it->>'pu')::numeric), coalesce((it->>'descuento')::numeric, 0), coalesce(it->>'promo', ''));
     v_costo := v_costo + round(c_unit * (it->>'q')::int, 2);
   end loop;
 

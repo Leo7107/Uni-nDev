@@ -372,3 +372,12 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   .campos, .doc-rec, .tarjeta-pago { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } html, .fila { scroll-behavior: auto; } }
+
+/* ---------- ofertas ---------- */
+.precio s, .precio-g s { color: var(--muted); font-weight: 400; text-decoration-thickness: 1px; }
+.tarjeta .precio s { font-size: 13px; margin-left: 2px; }
+.precio-g strong s { font: 400 20px/1 var(--f-body, inherit); letter-spacing: 0; margin-left: 6px; }
+.oferta-g { margin: 0 0 4px; font-size: 13.5px; color: var(--muted); }
+.oferta-g b { color: var(--accent); font-weight: 600; }
+.precio-g .ahorro, .item .ahorro { color: var(--accent); font-weight: 600; }
+.desc-l { color: var(--muted); }

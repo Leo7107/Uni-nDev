@@ -8,13 +8,21 @@ let cache = null, cacheHasta = 0;
 async function filas() {
   return db.leer('/productos?select=' + CAMPOS + '&order=orden.asc,cod.asc');
 }
+/* Promociones activas que todavía no terminan (si la tabla no existe aún, ninguna). */
+async function promociones() {
+  try {
+    const ahora = Date.now();
+    return (await db.leer('/promociones?select=id,nombre,tipo,valor,alcance,objetivo,inicio,fin,activa&activa=eq.true')).filter(p => new Date(p.fin).getTime() > ahora);
+  } catch (e) { return []; }
+}
 
 /* Devuelve el catálogo con sus ayudantes (by, precioDe, …). `fresco` evita la caché (para cobrar y facturar). */
 async function obtener(fresco) {
   if (!db.configurada()) return UD;
   if (!fresco && cache && Date.now() < cacheHasta) return cache;
   try {
-    cache = UD.desdeFilas(await filas());
+    const [f, pr] = await Promise.all([filas(), promociones()]);
+    cache = UD.desdeFilas(f, pr);
     cacheHasta = Date.now() + 15000;
     return cache;
   } catch (e) {
@@ -24,4 +32,4 @@ async function obtener(fresco) {
   }
 }
 
-module.exports = { obtener, filas, CAMPOS };
+module.exports = { obtener, filas, promociones, CAMPOS };

@@ -54,6 +54,7 @@ async function auth(ruta, opciones) {
 function iniciarSesion(correo, clave) { return auth('/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: correo, password: clave }) }); }
 function usuarioDelToken(token) { return auth('/user', { method: 'GET', headers: { Authorization: 'Bearer ' + token } }); }
 
+function insertar(ruta, datos) { return pedir(ruta, { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(datos) }); }
 function actualizar(ruta, datos) { return pedir(ruta, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(datos) }); }
 
 /* Supabase Storage: sube una foto al bucket público "productos" y devuelve su URL pública. */
@@ -66,4 +67,4 @@ async function subirFoto(ruta, buffer, tipo) {
 }
 function urlFotos() { return URL_BASE + '/storage/v1/object/public/productos/'; }
 
-module.exports = { configurada, emitirFactura, existencias, marcarCorreoEnviado, errorExistencia, leer, rpc, iniciarSesion, usuarioDelToken, actualizar, subirFoto, urlFotos };
+module.exports = { configurada, emitirFactura, existencias, marcarCorreoEnviado, errorExistencia, leer, rpc, iniciarSesion, usuarioDelToken, insertar, actualizar, subirFoto, urlFotos };

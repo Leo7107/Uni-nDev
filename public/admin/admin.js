@@ -49,7 +49,7 @@
   $('#salir').addEventListener('click', function () { salir(); });
 
   /* ---------- navegación ---------- */
-  var VISTAS = { resumen: vResumen, productos: vProductos, inventario: vInventario, ventas: vVentas, libro: vLibro };
+  var VISTAS = { resumen: vResumen, productos: vProductos, promociones: vPromos, inventario: vInventario, ventas: vVentas, libro: vLibro };
   function entrar() { $('#v-login').hidden = true; $('#v-panel').hidden = false; $('#quien').textContent = sesion.correo; ruta(); }
   function ruta() {
     if (!sesion) return;
@@ -146,7 +146,7 @@
       var nuevo = (p.existencia + q) ? (p.existencia * p.costo_unitario + q * cu) / (p.existencia + q) : cu;
       $('#c-prev').innerHTML = '<div><span>Existencia</span><b>' + p.existencia + ' → ' + (p.existencia + q) + '</b></div><div><span>Costo promedio</span><b>' + money(p.costo_unitario) + ' → ' + money(nuevo) + '</b></div><div><span>Total de la compra sin IVA</span><b>' + money(q * cu) + '</b></div><div><span>IVA crédito fiscal (13 %)</span><b>' + money(q * cu * 0.13) + '</b></div>';
     };
-    prev(); dlg.addEventListener('input', prev);
+    prev(); $('#f-compra').addEventListener('input', prev);
     $('#f-compra').addEventListener('submit', function (e) {
       e.preventDefault(); var er = $('#c-err'), q = parseInt($('#c-cant').value, 10), cu = Number($('#c-costo').value);
       if (!(q > 0)) { er.textContent = 'La cantidad debe ser un número entero mayor que cero.'; er.hidden = false; return; }
@@ -377,9 +377,87 @@
     else if (d.fotoDer !== undefined) { var j = +d.fotoDer; ed.galeria.splice(j + 1, 0, ed.galeria.splice(j, 1)[0]); pintarFotos(); }
   });
 
+  /* ---------- promociones ---------- */
+  var promos = [];
+  var hoyLocal = function (d) { var x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0, 16); };
+  function estadoPromo(p) {
+    var a = Date.now();
+    if (!p.activa) return '<span class="estado mal">Terminada</span>';
+    if (new Date(p.fin) <= a) return '<span class="estado mal">Vencida</span>';
+    if (new Date(p.inicio) > a) return '<span class="estado bajo">Programada</span>';
+    return '<span class="estado ok">Vigente</span>';
+  }
+  function aQue(p) {
+    if (p.alcance === 'todo') return 'Toda la tienda';
+    if (p.alcance === 'categoria') return 'Categoría ' + esc(p.objetivo);
+    var x = prods.filter(function (q) { return q.cod === p.objetivo; })[0];
+    return esc(p.objetivo) + (x ? ' · ' + esc(x.nombre || x.descripcion) : '');
+  }
+  function vPromos(c) {
+    Promise.all([api('promociones'), prods.length ? prods : api('productos')]).then(function (r) {
+      promos = r[0]; prods = r[1];
+      c.innerHTML = '<div class="cab"><div><h1>Promociones</h1><p>Descuentos por producto, por categoría o en toda la tienda, con fecha de inicio y fin. Si a un producto le aplican varias, se usa la de mayor descuento.</p></div>' +
+        '<div class="herr"><button class="btn" type="button" id="pr-nueva">Nueva promoción</button></div></div>' +
+        (promos.length ? '<div class="tabla-caja"><table><thead><tr><th>Promoción</th><th>Descuento</th><th>Aplica a</th><th>Inicio</th><th>Fin</th><th>Estado</th><th class="r"></th></tr></thead><tbody>' +
+          promos.map(function (p) {
+            var vig = p.activa && new Date(p.fin) > Date.now();
+            return '<tr><td class="desc">' + esc(p.nombre) + '</td><td>' + (p.tipo === 'porcentaje' ? Number(p.valor) + ' %' : money(p.valor)) + '</td><td class="desc">' + aQue(p) + '</td><td>' + fecha(p.inicio, true) + '</td><td>' + fecha(p.fin, true) + '</td><td>' + estadoPromo(p) + '</td>' +
+              '<td><div class="acciones"><button class="btn sec chico" type="button" data-promo="' + p.id + '">Editar</button>' + (vig ? '<button class="btn sec chico" type="button" data-promo-fin="' + p.id + '">Terminar</button>' : '') + '</div></td></tr>';
+          }).join('') + '</tbody></table></div>'
+          : '<div class="bloque"><p class="vacio">No hay promociones. Crea una para que la tienda muestre el precio normal tachado y el precio con descuento.</p></div>') +
+        '<p class="nota">En la factura cada línea muestra el precio normal y el descuento; las ventas gravadas y el IVA se calculan sobre el precio ya rebajado.</p>';
+      $('#pr-nueva').addEventListener('click', function () { dPromo(null); });
+    }, fallo(c));
+  }
+  function dPromo(id) {
+    var p = id ? promos.filter(function (x) { return x.id === id; })[0] : null, ahora = new Date();
+    var v = p || { nombre: '', tipo: 'porcentaje', valor: '', alcance: 'categoria', objetivo: 'Laptops', inicio: ahora.toISOString(), fin: new Date(ahora.getTime() + 7 * 864e5).toISOString(), activa: true };
+    var opsProd = prods.map(function (q) { return '<option value="' + q.cod + '"' + (v.objetivo === q.cod ? ' selected' : '') + '>' + q.cod + ' · ' + esc(q.nombre || q.descripcion) + ' (' + money(q.precio) + ')</option>'; }).join('');
+    var opsCat = CATEGORIAS.map(function (k) { return '<option' + (v.objetivo === k ? ' selected' : '') + '>' + k + '</option>'; }).join('');
+    abrir(cab(p ? 'Editar promoción' : 'Nueva promoción', 'El descuento se aplica sobre el precio con IVA de la tienda.') +
+      '<form id="f-promo" class="campos" novalidate>' +
+      '<div class="campo full"><label for="pr-nom">Nombre</label><input id="pr-nom" type="text" maxlength="80" placeholder="Ej.: Black Friday laptops" value="' + esc(v.nombre) + '" required></div>' +
+      '<div class="campo"><label for="pr-tipo">Tipo de descuento</label><select id="pr-tipo"><option value="porcentaje"' + (v.tipo === 'porcentaje' ? ' selected' : '') + '>Porcentaje (%)</option><option value="monto"' + (v.tipo === 'monto' ? ' selected' : '') + '>Monto fijo ($)</option></select></div>' +
+      '<div class="campo"><label for="pr-val" id="pr-val-l">' + (v.tipo === 'monto' ? 'Descuento en dólares' : 'Descuento en %') + '</label><input id="pr-val" type="number" min="0.01" step="0.01" inputmode="decimal" value="' + esc(v.valor) + '" required></div>' +
+      '<div class="campo"><label for="pr-alc">Aplica a</label><select id="pr-alc"><option value="producto"' + (v.alcance === 'producto' ? ' selected' : '') + '>Un producto</option><option value="categoria"' + (v.alcance === 'categoria' ? ' selected' : '') + '>Una categoría</option><option value="todo"' + (v.alcance === 'todo' ? ' selected' : '') + '>Toda la tienda</option></select></div>' +
+      '<div class="campo" id="pr-obj-c"><label for="pr-obj-p" id="pr-obj-l">Producto</label><select id="pr-obj-p">' + opsProd + '</select><select id="pr-obj-k">' + opsCat + '</select></div>' +
+      '<div class="campo"><label for="pr-ini">Inicio</label><input id="pr-ini" type="datetime-local" value="' + hoyLocal(new Date(v.inicio)) + '" required></div>' +
+      '<div class="campo"><label for="pr-fin">Fin</label><input id="pr-fin" type="datetime-local" value="' + hoyLocal(new Date(v.fin)) + '" required></div>' +
+      '<div class="vista-previa campo full" id="pr-prev"></div><p class="err campo full" hidden></p>' +
+      '<div class="dlg-pie campo full"><button class="btn sec" type="button" data-cerrar>Cancelar</button><button class="btn" type="submit">' + (p ? 'Guardar cambios' : 'Crear promoción') + '</button></div></form>');
+    var f = $('#f-promo');
+    var pinta = function () {
+      var alc = $('#pr-alc').value, tipo = $('#pr-tipo').value, val = Number($('#pr-val').value) || 0;
+      $('#pr-obj-c').hidden = alc === 'todo';
+      $('#pr-obj-p').hidden = alc !== 'producto'; $('#pr-obj-k').hidden = alc !== 'categoria';
+      $('#pr-obj-l').textContent = alc === 'producto' ? 'Producto' : 'Categoría'; $('#pr-obj-l').htmlFor = alc === 'producto' ? 'pr-obj-p' : 'pr-obj-k';
+      $('#pr-val-l').textContent = tipo === 'monto' ? 'Descuento en dólares' : 'Descuento en %';
+      var lista = prods.filter(function (q) { return q.activo !== false && (alc === 'todo' || (alc === 'producto' ? q.cod === $('#pr-obj-p').value : q.categoria === $('#pr-obj-k').value)); });
+      var ej = lista[0];
+      if (!ej || !(val > 0)) { $('#pr-prev').innerHTML = '<div><span>Productos afectados</span><b>' + lista.length + '</b></div>'; return; }
+      var pre = Number(ej.precio), d = tipo === 'porcentaje' ? pre * val / 100 : Math.min(val, pre - 0.01), nuevo = Math.round((pre - d) * 100) / 100;
+      var costo = Number(ej.costo_unitario) || 0, sin = nuevo / 1.13, mg = sin ? (sin - costo) / sin * 100 : 0;
+      $('#pr-prev').innerHTML = '<div><span>Productos afectados</span><b>' + lista.length + '</b></div><div><span>Ejemplo: ' + esc(ej.cod) + '</span><b>' + money(pre) + ' → ' + money(nuevo) + '</b></div><div><span>Precio sin IVA con descuento</span><b>' + money(sin) + '</b></div>' + (costo ? '<div><span>Margen con descuento</span><b' + (mg < 0 ? ' style="color:var(--mal)"' : '') + '>' + mg.toFixed(1) + ' %' + (mg < 0 ? ' (pérdida)' : '') + '</b></div>' : '');
+    };
+    pinta(); f.addEventListener('input', pinta); f.addEventListener('change', pinta);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); var er = f.querySelector('.err');
+      var alc = $('#pr-alc').value, ini = new Date($('#pr-ini').value), fin = new Date($('#pr-fin').value), val = Number($('#pr-val').value), tipo = $('#pr-tipo').value;
+      var m = !$('#pr-nom').value.trim() ? 'Escribe el nombre de la promoción.' : !(val > 0) ? 'Escribe el descuento.' : tipo === 'porcentaje' && val >= 100 ? 'El porcentaje debe ser menor que 100.' : isNaN(ini) || isNaN(fin) ? 'Revisa las fechas.' : fin <= ini ? 'La fecha de fin debe ser posterior al inicio.' : '';
+      if (m) { er.textContent = m; er.hidden = false; return; }
+      enviarForm(f, api('promocion_guardar', null, { id: p ? p.id : null, nombre: $('#pr-nom').value.trim(), tipo: tipo, valor: val, alcance: alc, objetivo: alc === 'producto' ? $('#pr-obj-p').value : alc === 'categoria' ? $('#pr-obj-k').value : '', inicio: ini.toISOString(), fin: fin.toISOString(), activa: p ? p.activa : true }), p ? 'Promoción actualizada' : 'Promoción creada');
+    });
+  }
+  function terminarPromo(id) {
+    var p = promos.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    abrir(cab('Terminar promoción', esc(p.nombre)) + '<form id="f-term" class="campos" novalidate><p class="nota campo full">Los precios vuelven a la normalidad de inmediato. Las facturas ya emitidas conservan su descuento.</p><p class="err campo full" hidden></p><div class="dlg-pie campo full"><button class="btn sec" type="button" data-cerrar>Cancelar</button><button class="btn peligro" type="submit">Terminar «' + esc(p.nombre) + '»</button></div></form>');
+    $('#f-term').addEventListener('submit', function (e) { e.preventDefault(); enviarForm(this, api('promocion_guardar', null, Object.assign({}, p, { activa: false })), 'Promoción terminada'); });
+  }
+
   /* ---------- eventos ---------- */
   document.addEventListener('click', function (e) {
     var ed2 = e.target.closest('[data-editar]'); if (ed2 && !dlg.open) { abrirEditor(ed2.dataset.editar); return; }
+    var pr = e.target.closest('[data-promo],[data-promo-fin]'); if (pr && !dlg.open) { if (pr.dataset.promo) dPromo(+pr.dataset.promo); else terminarPromo(+pr.dataset.promoFin); return; }
     var t = e.target.closest('[data-kardex],[data-compra],[data-ajuste],[data-factura]'); if (!t) return;
     if (t.dataset.kardex) dKardex(t.dataset.kardex);
     else if (t.dataset.compra) dCompra(t.dataset.compra);
