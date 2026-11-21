@@ -10,6 +10,7 @@
   --brand: #1f4fd8;
   --brand-ink: #ffffff;
   --brand-soft: #e8eefc;
+  --brand-titulo: #1a44bd; /* azul de la marca un poco más profundo para los títulos de sección */
   --accent: #d9531a;
   --ok: #17803d;
   --stage: #f6f7f9;
@@ -70,7 +71,7 @@ img { max-width: 100%; }
 /* estantes */
 .estante { padding-top: 56px; }
 .estante h2, .bloque h2 { font-size: clamp(24px, 3vw, 34px); font-weight: 700; line-height: 1.15; text-wrap: balance; }
-.estante h2 b, .bloque h2 b { color: var(--brand); font-weight: 800; }
+.estante h2 b, .bloque h2 b { color: var(--brand-titulo); font-weight: 800; }
 .estante h2 span, .bloque h2 span { color: var(--muted); }
 .fila { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 28px 0 34px; scrollbar-width: none;
   padding-left: max(20px, calc((100vw - var(--ancho)) / 2 + 20px)); scroll-padding-left: max(20px, calc((100vw - var(--ancho)) / 2 + 20px)); }
