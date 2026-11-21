@@ -82,7 +82,7 @@
   }
   var SECUENCIA = { 'LAP-006': ['LAP-006', 'TEC-004', 'MOU-003', 'AUD-001'], 'MON-001': ['MON-001', 'TEC-001', 'MOU-001'], 'ENE-001': ['ENE-001', 'ENE-002'] };
   function fotosPromo(pr) {
-    var cods = (SECUENCIA[pr.foto] || [pr.foto]).filter(function (c) { return by(c) || c === pr.foto; });
+    var cods = (SECUENCIA[pr.foto] || [pr.foto]).filter(function (c) { return c === pr.foto || tieneFoto(by(c)); });
     return cods.map(function (c, k) { var p = by(c), src = (p && p.foto) || '/img/' + c + '.webp'; return '<img class="' + (k ? '' : 'on') + '" src="' + src + '" alt="" loading="lazy" decoding="async">'; }).join('');
   }
   /* Turna las fotos de las tarjetas destacadas que están a la vista. */
