@@ -56,15 +56,6 @@ img { max-width: 100%; }
 .bolsa .n.bump { animation: bump .4s ease; }
 @keyframes bump { 40% { transform: scale(1.35); } }
 
-/* cabecera de la tienda */
-.cab { padding-block: 56px 28px; display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; }
-.cab h1 { font-size: clamp(44px, 7vw, 76px); font-weight: 800; letter-spacing: -.045em; line-height: 1; }
-.cab h1 span { display: block; font-size: .42em; letter-spacing: -.025em; font-weight: 700; color: var(--muted); margin-top: 12px; line-height: 1.15; max-width: 22ch; }
-.ayuda { display: flex; gap: 12px; align-items: center; max-width: 320px; }
-.ayuda .ic { width: 44px; height: 44px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); display: grid; place-items: center; flex: none; }
-.ayuda .ic svg { width: 22px; height: 22px; fill: none; stroke: var(--brand); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.ayuda p { font-size: 14px; color: var(--muted); line-height: 1.4; }
-.ayuda b { color: var(--fg); font-weight: 600; display: block; }
 
 .cats { display: flex; gap: 8px; overflow-x: auto; padding: 4px max(20px, env(safe-area-inset-left, 0px)) 18px; scroll-snap-type: x proximity; scrollbar-width: none; max-width: var(--ancho); margin: 0 auto; }
 .cats::-webkit-scrollbar { display: none; }
@@ -124,10 +115,6 @@ img { max-width: 100%; }
 .p-escritorio { background: #ddf3ee; --pc: #0f7d71; }
 .p-energia { background: #ffe9dc; --pc: #c2481a; }
 
-.razon { flex: 0 0 auto; width: min(300px, 74vw); min-height: 300px; scroll-snap-align: start; background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow); padding: 30px; display: flex; flex-direction: column; gap: 12px; }
-.razon .ic svg { width: 44px; height: 44px; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.razon h3 { font: 700 21px/1.2 var(--f-display); letter-spacing: -.02em; margin-top: 8px; }
-.razon p { color: var(--muted); font-size: 15px; }
 
 /* ---------- página de producto ---------- */
 .migas { padding-block: 22px 6px; font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -144,7 +131,7 @@ img { max-width: 100%; }
 .g-nav:hover { background: var(--btn-soft-hover); }
 .g-nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .g-nav.prev { left: 14px; } .g-nav.next { right: 14px; }
-.g-cont { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 12.5px; color: var(--muted); background: var(--btn-soft); padding: 3px 10px; border-radius: 99px; font-variant-numeric: tabular-nums; }
+.g-cont { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .g-thumbs { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
 .g-thumbs::-webkit-scrollbar { display: none; }
 .g-thumbs button { flex: none; width: 84px; height: 64px; border-radius: 12px; border: 2px solid transparent; background: var(--card); padding: 4px; box-shadow: var(--shadow); }
