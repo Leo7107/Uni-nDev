@@ -87,7 +87,59 @@
     return '<article class="promo ' + pr.cls + '"><div class="tx"><small>' + esc(pr.sub) + '</small><h3>' + esc(pr.t) + '</h3><p>' + esc(pr.p) + '</p></div><div class="arte"><img src="/img/' + pr.foto + '.webp" alt="" loading="lazy"></div>' + accion + '</article>';
   }
   function flechasHtml() { return '<button class="flecha" type="button" data-dir="-1" aria-label="Anterior">' + IZQ + '</button><button class="flecha" type="button" data-dir="1" aria-label="Siguiente">' + DER + '</button>'; }
+  /* ---------- banner de ofertas (estilo cartel: letras enormes y el producto grande) ---------- */
+  var ban = { i: 0, n: 0, t: null, pausa: false };
+  function slidesBanner() {
+    var out = [], pro = UD.PROMOS || [], ahora = Date.now();
+    pro.forEach(function (pr) {
+      if (new Date(pr.inicio) > ahora || new Date(pr.fin) <= ahora) return;
+      var af = P.filter(function (p) { var x = UD.promoDe(p); return p.activo !== false && x && x.id === pr.id; });
+      if (!af.length) return;
+      var p = af.filter(tieneFoto).sort(function (a, b) { return b.precio - a.precio; })[0] || af[0], o = precioBase(p);
+      var donde = pr.alcance === 'producto' ? p.nombre : pr.alcance === 'categoria' ? 'En ' + pr.objetivo.toLowerCase() : 'En toda la tienda';
+      out.push({ eyebrow: 'Hasta el ' + hasta(pr.fin), t: pr.nombre, big: rebaja(pr), p: p,
+        sub: esc(donde) + (pr.alcance === 'producto' ? '' : ' · ' + esc(p.nombre)) + ' a <b>' + money(o.tot) + '</b> <s>' + money(o.normal) + '</s>',
+        cta: pr.alcance === 'producto' ? '<a class="btn b-cta" href="/producto/' + p.cod + '">Comprar ahora</a>' : '<a class="btn b-cta" href="#" data-cat-ir="' + esc(pr.alcance === 'categoria' ? pr.objetivo : 'Laptops') + '">Ver ofertas</a>' });
+    });
+    Object.keys(ESTANTES).forEach(function (k) {
+      var e = ESTANTES[k].promo, c = ESTANTES[k].cats[0], p = by(e.foto); if (!p) return;
+      out.push({ eyebrow: e.sub, t: e.t, big: '', sub: esc(e.p), p: p,
+        cta: e.ver && by(e.ver) ? '<a class="btn b-cta" href="/producto/' + e.ver + '">Ver ' + esc(by(e.ver).nombre) + '</a>' : '<a class="btn b-cta" href="#" data-cat-ir="' + esc(c) + '">Ver ' + esc(c.toLowerCase()) + '</a>' });
+    });
+    return out.slice(0, 5);
+  }
+  function pintarBanner() {
+    var S = slidesBanner(); ban.n = S.length; ban.i = Math.max(0, Math.min(ban.i, S.length - 1));
+    $('#b-slides').innerHTML = S.map(function (s, k) {
+      return '<div class="b-slide t' + (k % 4) + '" role="group" aria-roledescription="diapositiva" aria-label="' + (k + 1) + ' de ' + S.length + '"><div class="wrap b-in">' +
+        '<div class="b-tx"><small>' + esc(s.eyebrow) + '</small><h2>' + esc(s.t) + '</h2>' + (s.big ? '<p class="b-big">' + s.big + '</p>' : '') + '<p class="b-sub">' + s.sub + '</p>' + s.cta + '</div>' +
+        '<div class="b-arte">' + vis(s.p) + '</div></div></div>';
+    }).join('');
+    $('#b-ctrl').innerHTML = S.length > 1 ? '<div class="b-pasos">' + S.map(function (s, k) { return '<button type="button" data-paso="' + k + '" aria-label="Ver oferta ' + (k + 1) + '"><i></i></button>'; }).join('') + '</div>' +
+      '<div class="b-fl"><button class="flecha" type="button" data-bdir="-1" aria-label="Oferta anterior">' + IZQ + '</button><button class="flecha" type="button" data-bdir="1" aria-label="Oferta siguiente">' + DER + '</button></div>' : '';
+    irSlide(ban.i);
+  }
+  function irSlide(n) {
+    if (!ban.n) return;
+    ban.i = (n + ban.n) % ban.n;
+    $$('#b-slides .b-slide').forEach(function (s, k) {
+      var on = k === ban.i; s.classList.toggle('on', on);
+      if (on) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true');
+      $$('a,button', s).forEach(function (a) { a.tabIndex = on ? 0 : -1; });
+    });
+    $$('#b-ctrl [data-paso]').forEach(function (b, k) {
+      b.classList.remove('on', 'visto'); if (k < ban.i) b.classList.add('visto');
+      if (k === ban.i) { void b.offsetWidth; b.classList.add('on'); }
+      b.setAttribute('aria-current', k === ban.i ? 'true' : 'false');
+    });
+    programar();
+  }
+  function programar() {
+    clearTimeout(ban.t); $('#inicio').classList.toggle('pausa', ban.pausa);
+    if (!ban.pausa && ban.n > 1 && !reducido()) ban.t = setTimeout(function () { irSlide(ban.i + 1); }, 6000);
+  }
   function pintarTienda() {
+    pintarBanner();
     Object.keys(ESTANTES).forEach(function (k) {
       var e = ESTANTES[k], html = P.filter(function (p) { return e.cats.indexOf(p.cat) >= 0; }).map(tarjeta);
       html.splice(Math.min(e.promo.pos, html.length), 0, promo(e.promo));
@@ -650,6 +702,15 @@
   }
 
   pintarTienda(); pintarPanel(); ruta(); cargarCatalogo();
+  (function () {
+    var b = $('#inicio');
+    b.addEventListener('click', function (e) { var t = e.target.closest('[data-paso],[data-bdir]'); if (!t) return; irSlide(t.dataset.paso != null ? +t.dataset.paso : ban.i + +t.dataset.bdir); });
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; ban.pausa = true; programar(); });
+    b.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'mouse') return; ban.pausa = false; irSlide(ban.i); });
+    b.addEventListener('focusin', function () { ban.pausa = true; programar(); });
+    b.addEventListener('focusout', function (e) { if (!b.contains(e.relatedTarget)) { ban.pausa = false; programar(); } });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) clearTimeout(ban.t); else programar(); });
+  })();
   $$('#v-tienda .fila').forEach(function (f) { f.addEventListener('scroll', function () { actFlechas(f); }, { passive: true }); });
   window.addEventListener('resize', function () { $$('.fila').forEach(actFlechas); });
 })();
