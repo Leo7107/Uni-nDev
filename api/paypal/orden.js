@@ -2,12 +2,13 @@
 const { leerJSON, enviar, limitar, paypal } = require('../_util');
 const F = require('../../lib/factura.js');
 const db = require('../_db');
+const cat = require('../_catalogo');
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return enviar(res, 405, { error: 'Método no permitido.' });
   if (!limitar(req, 20, 10 * 60 * 1000)) return enviar(res, 429, { error: 'Demasiados intentos. Espera unos minutos.' });
   try {
     const ped = await leerJSON(req);
-    const f = F.armarFactura({ ...ped, pago: 'paypal' }, { sinLimite: db.configurada() });
+    const f = F.armarFactura({ ...ped, pago: 'paypal' }, { sinLimite: db.configurada(), catalogo: await cat.obtener(true) });
     /* Antes de cobrar, confirma que haya existencias de las versiones en inventario. */
     if (db.configurada()) {
       const ex = await db.existencias();

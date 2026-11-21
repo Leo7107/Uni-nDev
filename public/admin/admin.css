@@ -117,3 +117,42 @@ tfoot td { font-weight: 700; background: var(--sunk); border-bottom: 0; }
   .marca em { display: none; }
   .campos { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- productos ---------- */
+.mini-foto { width: 52px; height: 40px; border-radius: 8px; background: var(--sunk); object-fit: contain; display: block; mix-blend-mode: multiply; }
+.mini-foto.vacia { display: grid; place-items: center; color: var(--muted); font-size: 11px; }
+.dlg.editor { width: min(980px, calc(100% - 24px)); }
+.ed-sec { border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 12px; }
+.ed-sec h3 { font-size: 16px; }
+.ed-sec .ayuda { color: var(--muted); font-size: 13px; margin-top: -6px; }
+.campos.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.campo textarea { padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; width: 100%; font: inherit; resize: vertical; min-height: 90px; }
+.campo textarea:focus, .campo select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.campo .calc { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.check input { width: 17px; height: 17px; accent-color: var(--brand); }
+.fotos { display: flex; gap: 10px; flex-wrap: wrap; }
+.foto { position: relative; width: 120px; height: 96px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunk); display: grid; place-items: center; overflow: hidden; }
+.foto img { max-width: 100%; max-height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+.foto .principal { position: absolute; left: 6px; top: 6px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; }
+.foto .ctl { position: absolute; right: 4px; bottom: 4px; display: flex; gap: 3px; }
+.foto .ctl button { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: #fff; font-size: 13px; line-height: 1; padding: 0; }
+.subir { width: 120px; height: 96px; border-radius: 12px; border: 1.5px dashed var(--line); background: #fff; display: grid; place-items: center; text-align: center; font-size: 13px; color: var(--muted); cursor: pointer; padding: 6px; }
+.subir:hover { border-color: var(--brand); color: var(--brand); }
+.filas { display: grid; gap: 8px; }
+.fila { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; }
+.fila input { padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; width: 100%; min-width: 0; font: inherit; }
+.fila input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.quitar { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: #fff; color: var(--muted); font-size: 16px; line-height: 1; }
+.quitar:hover { color: var(--mal); border-color: var(--mal); }
+.grupo-v { border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; background: #fcfcfd; }
+.grupo-v .cab-v { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+.op { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.op input[type=color] { width: 40px; height: 36px; padding: 2px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+.op .base { font-size: 12px; color: var(--ok); font-weight: 600; white-space: nowrap; }
+.btn.enlace { background: none; color: var(--brand); border: 0; padding: 4px 0; justify-self: start; }
+.btn.enlace:hover { text-decoration: underline; filter: none; }
+.pie-fijo { position: sticky; bottom: -24px; background: #fff; padding: 14px 0 0; margin-bottom: -4px; border-top: 1px solid var(--line); }
+@media (max-width: 860px) { .campos.tres, .fila, .op { grid-template-columns: minmax(0, 1fr); } .grupo-v .cab-v { grid-template-columns: minmax(0, 1fr); } }
+.grupo-v input:not([type=checkbox]):not([type=color]) { padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; width: 100%; min-width: 0; font: inherit; }
+.grupo-v input:not([type=checkbox]):not([type=color]):focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }

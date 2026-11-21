@@ -11,6 +11,14 @@
     {
       "source": "/factura",
       "destination": "/"
+    },
+    {
+      "source": "/producto/:cod",
+      "destination": "/api/pagina?cod=:cod"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/pagina?tipo=sitemap"
     }
   ],
   "headers": [
@@ -24,11 +32,9 @@
       ]
     }
   ],
-  "redirects": [
-    {
-      "source": "/admin/",
-      "destination": "/admin",
-      "permanent": true
+  "functions": {
+    "api/pagina.js": {
+      "includeFiles": "plantilla.html"
     }
-  ]
+  }
 }

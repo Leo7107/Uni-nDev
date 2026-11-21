@@ -2,10 +2,10 @@
 const ENV = process.env;
 const PAYPAL_BASE = (ENV.PAYPAL_ENV || 'sandbox') === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
-async function leerJSON(req) {
+async function leerJSON(req, max = 100000) {
   if (req.body && typeof req.body === 'object') return req.body;
   const partes = []; let tam = 0;
-  for await (const c of req) { tam += c.length; if (tam > 100000) throw new Error('Solicitud demasiado grande.'); partes.push(c); }
+  for await (const c of req) { tam += c.length; if (tam > max) throw new Error('Solicitud demasiado grande.'); partes.push(c); }
   try { return JSON.parse(Buffer.concat(partes).toString('utf8') || '{}'); } catch (e) { throw new Error('Solicitud inválida.'); }
 }
 function enviar(res, codigo, datos) {

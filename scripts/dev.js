@@ -15,6 +15,8 @@ const API = {
   '/api/config': require('../api/config.js'),
   '/api/inventario': require('../api/inventario.js'),
   '/api/admin': require('../api/admin.js'),
+  '/api/catalogo': require('../api/catalogo.js'),
+  '/api/pagina': require('../api/pagina.js'),
   '/api/pedido': require('../api/pedido.js'),
   '/api/paypal/orden': require('../api/paypal/orden.js'),
   '/api/paypal/capturar': require('../api/paypal/capturar.js')
@@ -30,6 +32,10 @@ function archivo(url) {
   return null;
 }
 http.createServer(async (req, res) => {
+  /* Mismos rewrites que vercel.json */
+  let m = /^\/producto\/([^/?]+)/.exec(req.url);
+  if (m) req.url = '/api/pagina?cod=' + encodeURIComponent(m[1]);
+  else if (req.url.split('?')[0] === '/sitemap.xml') req.url = '/api/pagina?tipo=sitemap';
   const ruta = req.url.split('?')[0];
   if (API[ruta]) { try { await API[ruta](req, res); } catch (e) { console.error(e); res.statusCode = 500; res.end('{"error":"Error interno"}'); } return; }
   const f = archivo(req.url);

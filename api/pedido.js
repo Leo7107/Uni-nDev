@@ -3,6 +3,7 @@ const { ENV, leerJSON, enviar, limitar, paypal } = require('./_util');
 const F = require('../lib/factura.js');
 const UD = require('../lib/datos.js');
 const db = require('./_db');
+const cat = require('./_catalogo');
 const LOGO = require('../lib/logo.js');
 const { jsPDF } = require('jspdf');
 const nodemailer = require('nodemailer');
@@ -45,7 +46,7 @@ module.exports = async (req, res) => {
   let f;
   try {
     const ped = await leerJSON(req);
-    f = F.armarFactura(ped, { sinLimite: db.configurada() });
+    f = F.armarFactura(ped, { sinLimite: db.configurada(), catalogo: await cat.obtener(true) });
     /* Comprueba el pago según el método. */
     if (f.pago === 'tarjeta-prueba') {
       const ult4 = String(ped.tarjeta?.ult4 || '');
@@ -69,7 +70,7 @@ module.exports = async (req, res) => {
       const r = await db.emitirFactura({ ...f, pago_detalle: f.tarjeta || f.paypal || {} });
       f.id = r.id; f.correlativo = r.correlativo; f.control = r.control; existencias = r.existencias;
     } catch (e) {
-      const sin = db.errorExistencia(e, cod => (UD.by(cod) || {}).nombre);
+      const sin = db.errorExistencia(e, cod => (f.items.find(i => i.cod === cod) || {}).desc);
       if (sin) return enviar(res, 409, { error: sin.mensaje + (f.pago === 'paypal' ? ' Tu pago en PayPal Sandbox quedó registrado; la tienda lo reembolsará.' : ''), sinExistencia: sin });
       console.error('emitir_factura', e.message);
       return enviar(res, 503, { error: 'No pudimos registrar la factura en este momento. Inténtalo de nuevo en unos minutos.' });

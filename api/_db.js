@@ -54,4 +54,16 @@ async function auth(ruta, opciones) {
 function iniciarSesion(correo, clave) { return auth('/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: correo, password: clave }) }); }
 function usuarioDelToken(token) { return auth('/user', { method: 'GET', headers: { Authorization: 'Bearer ' + token } }); }
 
-module.exports = { configurada, emitirFactura, existencias, marcarCorreoEnviado, errorExistencia, leer, rpc, iniciarSesion, usuarioDelToken };
+function actualizar(ruta, datos) { return pedir(ruta, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(datos) }); }
+
+/* Supabase Storage: sube una foto al bucket público "productos" y devuelve su URL pública. */
+async function subirFoto(ruta, buffer, tipo) {
+  const h = { apikey: CLAVE, 'Content-Type': tipo, 'x-upsert': 'true', 'Cache-Control': 'max-age=31536000' };
+  if (CLAVE.startsWith('eyJ')) h.Authorization = 'Bearer ' + CLAVE;
+  const r = await fetch(URL_BASE + '/storage/v1/object/productos/' + ruta, { method: 'POST', headers: h, body: buffer });
+  if (!r.ok) { const t = await r.text(); const e = new Error('No se pudo guardar la foto (' + r.status + '): ' + t.slice(0, 160)); e.status = r.status; throw e; }
+  return URL_BASE + '/storage/v1/object/public/productos/' + ruta;
+}
+function urlFotos() { return URL_BASE + '/storage/v1/object/public/productos/'; }
+
+module.exports = { configurada, emitirFactura, existencias, marcarCorreoEnviado, errorExistencia, leer, rpc, iniciarSesion, usuarioDelToken, actualizar, subirFoto, urlFotos };

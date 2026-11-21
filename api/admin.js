@@ -3,12 +3,16 @@
    Todas las lecturas y escrituras usan la clave secreta del servidor; el navegador solo recibe un token de sesión. */
 const { leerJSON, enviar, limitar } = require('./_util');
 const db = require('./_db');
+const UD = require('../lib/datos.js');
 
 const ADMINS = (process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const COD = /^[A-Z]{3}-\d{3}$/;
 const enc = encodeURIComponent;
 
 function mensajeError(e) {
+  const mm = String((e && e.message) || '');
+  if (mm.includes('CODIGO_EXISTE')) return 'Ya existe un producto con ese código.';
+  if (mm.includes('CODIGO_INVALIDO')) return 'El código debe tener 3 letras, un guion y 3 números, por ejemplo LAP-007.';
   const m = String((e && e.message) || '');
   if (/SIN_EXISTENCIA:([A-Z]{3}-\d{3}):(\d+)/.test(m)) { const [, c, n] = m.match(/SIN_EXISTENCIA:([A-Z]{3}-\d{3}):(\d+)/); return `El ajuste dejaría ${c} en negativo: solo hay ${n} unidades.`; }
   if (m.includes('PRODUCTO_NO_EXISTE')) return 'Ese producto no existe.';
@@ -70,13 +74,78 @@ const ACCIONES = {
     const id = parseInt(b.id, 10); if (!(id > 0)) throw new Error('Factura inválida.');
     return db.rpc('anular_factura', { p_id: id, p_motivo: String(b.motivo || '').slice(0, 160) });
   },
+  /* ---------- productos ---------- */
+  async productos() { return db.leer('/productos?select=*&order=orden.asc,cod.asc'); },
+  async producto_guardar(q, b) {
+    const p = validarProducto(b);
+    if (b.nuevo) {
+      const ex = parseInt(b.existencia, 10) || 0, costo = Number(b.costo_unitario) || 0;
+      if (ex < 0 || ex > 100000 || costo < 0 || costo > 100000) throw new Error('Revisa la existencia y el costo inicial.');
+      return db.rpc('crear_producto', { p: { cod: String(b.cod || '').toUpperCase().trim(), existencia: ex, costo_unitario: costo, ...p } });
+    }
+    if (!COD.test(b.cod || '')) throw new Error('Código inválido.');
+    const r = await db.actualizar('/productos?cod=eq.' + enc(b.cod), { ...p, precio_sin_iva: Math.round(p.precio / 1.13 * 100) / 100, actualizado: new Date().toISOString() });
+    if (!r || !r.length) throw new Error('Ese producto no existe.');
+    return { cod: b.cod };
+  },
+  async subir(q, b) {
+    const tipos = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
+    if (!tipos[b.tipo]) throw new Error('La foto debe ser WEBP, JPG o PNG.');
+    const buf = Buffer.from(String(b.datos || ''), 'base64');
+    if (!buf.length || buf.length > 3.5 * 1024 * 1024) throw new Error('La foto pesa demasiado (máximo 3.5 MB).');
+    const carpeta = /^[A-Z]{3}-\d{3}$/.test(b.cod || '') ? b.cod : 'nuevos';
+    const ruta = carpeta + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + tipos[b.tipo];
+    return { url: await db.subirFoto(ruta, buf, b.tipo) };
+  },
   async libro(q) {
     const mes = /^\d{4}-\d{2}$/.test(q.mes || '') ? q.mes : new Date().toISOString().slice(0, 7);
     const [y, m] = mes.split('-').map(Number); const fin = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
     return db.leer(`/libro_ventas_cf?select=*&dia=gte.${mes}-01&dia=lt.${fin}&order=dia.asc`);
   }
 };
-const ESCRITURA = new Set(['compra', 'ajuste', 'anular']);
+const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir']);
+
+/* Valida y limpia la ficha de un producto que llega del panel. Lanza Error con un mensaje claro. */
+const CATEGORIAS = UD.CATS.map(c => c[0]);
+function texto(v, max, nombre, min) {
+  const t = String(v == null ? '' : v).trim();
+  if (min && t.length < min) throw new Error(`Escribe ${nombre}.`);
+  if (t.length > max) throw new Error(`${nombre[0].toUpperCase() + nombre.slice(1)} es demasiado largo (máximo ${max} caracteres).`);
+  return t;
+}
+function urlFotoValida(u) { return typeof u === 'string' && (/^\/img\/[A-Za-z0-9/_.-]+\.(webp|jpe?g|png)$/.test(u) || u.startsWith(db.urlFotos())); }
+function validarProducto(b) {
+  const precio = Math.round(Number(b.precio) * 100) / 100;
+  if (!(precio > 0 && precio <= 100000)) throw new Error('El precio debe ser mayor que cero.');
+  if (!CATEGORIAS.includes(b.categoria)) throw new Error('Elige una categoría de la lista.');
+  const lista = (v, max) => { if (!Array.isArray(v) || v.length > max) throw new Error('Hay demasiados elementos en la ficha.'); return v; };
+  const puntos = lista(b.puntos || [], 6).map(x => [texto(x[0], 80, 'el título del punto destacado', 1), texto(x[1], 300, 'el texto del punto destacado')]).filter(x => x[0]);
+  const especificaciones = lista(b.especificaciones || [], 30).map(x => [texto(x[0], 60, 'el nombre de la especificación', 1), texto(x[1], 200, 'el valor de la especificación', 1)]);
+  const galeria = lista(b.galeria || [], 12);
+  if (!galeria.every(urlFotoValida)) throw new Error('Una de las fotos no es válida. Vuelve a subirla.');
+  const versiones = lista(b.versiones || [], 4).map(g => {
+    const ops = lista(g.ops || [], 8);
+    if (ops.length < 2) throw new Error('Cada grupo de versiones necesita al menos 2 opciones.');
+    return {
+      t: texto(g.t, 40, 'el nombre del grupo de versiones', 1), color: !!g.color,
+      ops: ops.map((o, i) => {
+        const d = i === 0 ? 0 : Math.round(Number(o[1] || 0) * 100) / 100;
+        if (!(Math.abs(d) <= 10000)) throw new Error('Revisa la diferencia de precio de las versiones.');
+        const hex = g.color ? String(o[2] || '#cccccc') : null;
+        if (hex && !/^#[0-9a-fA-F]{6}$/.test(hex)) throw new Error('Color inválido en las versiones.');
+        const fotos = Array.isArray(o[3]) && o[3].length ? o[3].filter(urlFotoValida).slice(0, 8) : null;
+        const ir = o[4] && COD.test(o[4]) ? o[4] : null;
+        return [texto(o[0], 60, 'el nombre de la opción', 1), ir ? null : d, hex, fotos, ir];
+      })
+    };
+  });
+  return {
+    nombre: texto(b.nombre, 120, 'el nombre', 3), categoria: b.categoria, marca: texto(b.marca, 60, 'la marca', 1),
+    specs_corto: texto(b.specs_corto, 160, 'la línea corta'), resumen: texto(b.resumen, 240, 'el resumen'),
+    descripcion_larga: texto(b.descripcion_larga, 3000, 'la descripción'), puntos, especificaciones, galeria, versiones,
+    activo: b.activo !== false, precio
+  };
+}
 
 module.exports = async (req, res) => {
   const url = new URL(req.url, 'http://x'), a = url.searchParams.get('a') || '';
@@ -101,7 +170,7 @@ module.exports = async (req, res) => {
   const u = await verificarAdmin(req);
   if (!u) return enviar(res, 401, { error: 'Tu sesión venció. Vuelve a iniciar sesión.' });
   try {
-    const b = req.method === 'POST' ? await leerJSON(req) : {};
+    const b = req.method === 'POST' ? await leerJSON(req, a === 'subir' ? 5000000 : 300000) : {};
     enviar(res, 200, { datos: await accion(q, b) });
   } catch (e) {
     const m = mensajeError(e);

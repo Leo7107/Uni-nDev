@@ -24,10 +24,10 @@
   function arte() {
     return '<svg viewBox="0 0 240 180" aria-hidden="true"><rect x="70" y="18" width="100" height="148" rx="12" fill="#1f2229"/><rect x="84" y="34" width="72" height="34" rx="4" fill="#3c8f5a"/><path d="M124 40l-10 12h9l-5 11 13-15h-9l4-8z" fill="#fff"/><circle cx="100" cy="98" r="9" fill="#3a3f49"/><circle cx="140" cy="98" r="9" fill="#3a3f49"/><circle cx="100" cy="128" r="9" fill="#3a3f49"/><circle cx="140" cy="128" r="9" fill="#3a3f49"/><circle cx="120" cy="154" r="4" fill="#21b35b"/></svg>';
   }
-  function tieneFoto(p) { return p && p.cod !== 'ENE-002'; }
+  function tieneFoto(p) { return !!(p && p.foto); }
   function vis(p, src) {
     if (!tieneFoto(p) && !src) return arte();
-    return '<img src="' + (src || '/img/' + p.cod + '.webp') + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async">';
+    return '<img src="' + (src || p.foto) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async">';
   }
 
   /* ---------- versiones y precios ---------- */
@@ -627,7 +627,22 @@
   });
   window.addEventListener('popstate', ruta);
 
-  pintarTienda(); pintarPanel(); ruta(); cargarInventario();
+  /* Catálogo vigente desde la base de datos (productos nuevos, precios y fotos del panel). */
+  function usarCatalogo(C) {
+    UD = C; P = C.P; D = C.D; by = C.by;
+    grupos = C.grupos; opcion = C.opcion; esBase = C.esBase; precioDe = C.precioDe; nombreVar = C.nombreVar;
+    /* Quita del carrito productos que ya no existen o versiones que cambiaron. */
+    Object.keys(carro).forEach(function (k) { var l = carro[k], p = by(l.cod); if (!p || !C.selValida(p, l.sel)) delete carro[k]; });
+    guardar(); pintarTienda(); pintarPanel();
+    if (/^\/producto\//.test(location.pathname) || vistaActual === 'v-pagar') ruta();
+  }
+  function cargarCatalogo() {
+    fetch('/api/catalogo').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (d && d.productos && d.productos.length) usarCatalogo(window.UDDatos.desdeFilas(d.productos));
+    }, function () {});
+  }
+
+  pintarTienda(); pintarPanel(); ruta(); cargarCatalogo();
   $$('#v-tienda .fila').forEach(function (f) { f.addEventListener('scroll', function () { actFlechas(f); }, { passive: true }); });
   window.addEventListener('resize', function () { $$('.fila').forEach(actFlechas); });
 })();
