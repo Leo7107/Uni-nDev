@@ -89,6 +89,11 @@
   function flechasHtml() { return '<button class="flecha" type="button" data-dir="-1" aria-label="Anterior">' + IZQ + '</button><button class="flecha" type="button" data-dir="1" aria-label="Siguiente">' + DER + '</button>'; }
   /* ---------- banner de ofertas (estilo cartel: letras enormes y el producto grande) ---------- */
   var ban = { i: 0, n: 0, t: null, pausa: false };
+  var CORTOS = {
+    laptops: ['Juega en serio.', 'Laptops con RTX para tus juegos favoritos.', 'GAMING'],
+    escritorio: ['Arma tu escritorio', 'Monitor de 24", teclado y mouse desde $154.90.', 'ESCRITORIO'],
+    conecta: ['Sin cortes de luz', 'Un UPS protege tu computadora y tu trabajo.', 'ENERGÍA']
+  };
   function slidesBanner() {
     var out = [], pro = UD.PROMOS || [], ahora = Date.now();
     pro.forEach(function (pr) {
@@ -97,13 +102,13 @@
       if (!af.length) return;
       var p = af.filter(tieneFoto).sort(function (a, b) { return b.precio - a.precio; })[0] || af[0], o = precioBase(p);
       var donde = pr.alcance === 'producto' ? p.nombre : pr.alcance === 'categoria' ? 'En ' + pr.objetivo.toLowerCase() : 'En toda la tienda';
-      out.push({ eyebrow: 'Hasta el ' + hasta(pr.fin), t: pr.nombre, big: rebaja(pr), p: p,
+      out.push({ eyebrow: 'Hasta el ' + hasta(pr.fin), t: pr.nombre, big: rebaja(pr), fondo: pr.alcance === 'categoria' ? pr.objetivo.toUpperCase() : 'OFERTA', p: p,
         sub: esc(donde) + (pr.alcance === 'producto' ? '' : ' · ' + esc(p.nombre)) + ' a <b>' + money(o.tot) + '</b> <s>' + money(o.normal) + '</s>',
         cta: pr.alcance === 'producto' ? '<a class="btn b-cta" href="/producto/' + p.cod + '">Comprar ahora</a>' : '<a class="btn b-cta" href="#" data-cat-ir="' + esc(pr.alcance === 'categoria' ? pr.objetivo : 'Laptops') + '">Ver ofertas</a>' });
     });
     Object.keys(ESTANTES).forEach(function (k) {
-      var e = ESTANTES[k].promo, c = ESTANTES[k].cats[0], p = by(e.foto); if (!p) return;
-      out.push({ eyebrow: e.sub, t: e.t, big: '', sub: esc(e.p), p: p,
+      var e = ESTANTES[k].promo, c = ESTANTES[k].cats[0], p = by(e.foto), x = CORTOS[k] || [e.t, e.p, c.toUpperCase()]; if (!p) return;
+      out.push({ eyebrow: e.sub, t: x[0], big: '', sub: esc(x[1]), fondo: x[2], p: p,
         cta: e.ver && by(e.ver) ? '<a class="btn b-cta" href="/producto/' + e.ver + '">Ver ' + esc(by(e.ver).nombre) + '</a>' : '<a class="btn b-cta" href="#" data-cat-ir="' + esc(c) + '">Ver ' + esc(c.toLowerCase()) + '</a>' });
     });
     return out.slice(0, 5);
@@ -112,7 +117,8 @@
     var S = slidesBanner(); ban.n = S.length; ban.i = Math.max(0, Math.min(ban.i, S.length - 1));
     $('#b-slides').innerHTML = S.map(function (s, k) {
       return '<div class="b-slide t' + (k % 4) + '" role="group" aria-roledescription="diapositiva" aria-label="' + (k + 1) + ' de ' + S.length + '"><div class="wrap b-in">' +
-        '<div class="b-tx"><small>' + esc(s.eyebrow) + '</small><h2>' + esc(s.t) + '</h2>' + (s.big ? '<p class="b-big">' + s.big + '</p>' : '') + '<p class="b-sub">' + s.sub + '</p>' + s.cta + '</div>' +
+        '<span class="b-fondo" aria-hidden="true"><span>' + esc(s.fondo) + ' · ' + esc(s.fondo) + ' · </span><span>' + esc(s.fondo) + ' · ' + esc(s.fondo) + ' · </span></span>' +
+        '<div class="b-tx"><small>' + esc(s.eyebrow) + '</small><h2' + (s.t.length > 16 ? ' class="largo"' : '') + '>' + esc(s.t) + '</h2>' + (s.big ? '<p class="b-big">' + s.big + '</p>' : '') + '<p class="b-sub">' + s.sub + '</p>' + s.cta + '</div>' +
         '<div class="b-arte">' + vis(s.p) + '</div></div></div>';
     }).join('');
     $('#b-ctrl').innerHTML = S.length > 1 ? '<div class="b-pasos">' + S.map(function (s, k) { return '<button type="button" data-paso="' + k + '" aria-label="Ver oferta ' + (k + 1) + '"><i></i></button>'; }).join('') + '</div>' +
@@ -136,7 +142,7 @@
   }
   function programar() {
     clearTimeout(ban.t); $('#inicio').classList.toggle('pausa', ban.pausa);
-    if (!ban.pausa && ban.n > 1 && !reducido()) ban.t = setTimeout(function () { irSlide(ban.i + 1); }, 6000);
+    if (!ban.pausa && ban.n > 1 && !reducido()) ban.t = setTimeout(function () { irSlide(ban.i + 1); }, 4500);
   }
   function pintarTienda() {
     pintarBanner();
