@@ -13,9 +13,15 @@ async function filas() {
 async function obtener(fresco) {
   if (!db.configurada()) return UD;
   if (!fresco && cache && Date.now() < cacheHasta) return cache;
-  cache = UD.desdeFilas(await filas());
-  cacheHasta = Date.now() + 15000;
-  return cache;
+  try {
+    cache = UD.desdeFilas(await filas());
+    cacheHasta = Date.now() + 15000;
+    return cache;
+  } catch (e) {
+    /* Si la tabla aún no tiene los campos del catálogo (falta 03-productos.sql) o Supabase no responde, usa el del archivo. */
+    console.error('catálogo desde Supabase no disponible:', e.message);
+    return cache || UD;
+  }
 }
 
 module.exports = { obtener, filas, CAMPOS };
