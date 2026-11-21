@@ -80,11 +80,33 @@
     return o.desc ? '<span class="precio oferta">' + money(o.tot) + ' <s>' + money(o.normal) + '</s><small>IVA incluido · ahorras ' + money(o.desc) + '</small></span>'
       : '<span class="precio">' + money(p.precio) + '<small>IVA incluido</small></span>';
   }
+  var SECUENCIA = { 'LAP-006': ['LAP-006', 'TEC-004', 'MOU-003', 'AUD-001'], 'MON-001': ['MON-001', 'TEC-001', 'MOU-001'], 'ENE-001': ['ENE-001', 'ENE-002'] };
+  function fotosPromo(pr) {
+    var cods = (SECUENCIA[pr.foto] || [pr.foto]).filter(function (c) { return by(c) || c === pr.foto; });
+    return cods.map(function (c, k) { var p = by(c), src = (p && p.foto) || '/img/' + c + '.webp'; return '<img class="' + (k ? '' : 'on') + '" src="' + src + '" alt="" loading="lazy" decoding="async">'; }).join('');
+  }
+  /* Turna las fotos de las tarjetas destacadas que están a la vista. */
+  var turnoT = null;
+  function turnarFotos() {
+    clearInterval(turnoT); if (reducido()) return;
+    turnoT = setInterval(function () {
+      if (document.hidden || vistaActual !== 'v-tienda') return;
+      $$('#v-tienda .promo .arte').forEach(function (a) {
+        var imgs = a.querySelectorAll('img'); if (imgs.length < 2) return;
+        var r = a.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) return;
+        if (a.closest('.promo').matches(':hover')) return;
+        var i = 0; imgs.forEach(function (im, k) { if (im.classList.contains('on')) i = k; });
+        imgs[i].classList.remove('on'); imgs[i].classList.add('sale');
+        setTimeout(function () { imgs[i].classList.remove('sale'); }, 900);
+        imgs[(i + 1) % imgs.length].classList.add('on');
+      });
+    }, 2600);
+  }
   function promo(pr) {
     var accion = pr.ir ? '<a class="ir" href="#' + pr.ir + '" aria-label="Ir a ' + esc(pr.sub) + '">' + ARROW + '</a>'
       : pr.ver ? '<a class="ir" href="/producto/' + pr.ver + '" aria-label="Ver ' + esc(pr.sub) + '">' + ARROW + '</a>'
       : '<button class="ir" type="button" data-combo aria-label="Agregar el escritorio completo al carrito">' + PLUS + '</button>';
-    return '<article class="promo ' + pr.cls + '"><div class="tx"><small>' + esc(pr.sub) + '</small><h3>' + esc(pr.t) + '</h3><p>' + esc(pr.p) + '</p></div><div class="arte"><img src="/img/' + pr.foto + '.webp" alt="" loading="lazy"></div>' + accion + '</article>';
+    return '<article class="promo ' + pr.cls + '"><div class="tx"><small>' + esc(pr.sub) + '</small><h3>' + esc(pr.t) + '</h3><p>' + esc(pr.p) + '</p></div><div class="arte">' + fotosPromo(pr) + '</div>' + accion + '</article>';
   }
   function flechasHtml() { return '<button class="flecha" type="button" data-dir="-1" aria-label="Anterior">' + IZQ + '</button><button class="flecha" type="button" data-dir="1" aria-label="Siguiente">' + DER + '</button>'; }
   /* ---------- banner de ofertas (estilo cartel: letras enormes y el producto grande) ---------- */
@@ -117,9 +139,8 @@
     var S = slidesBanner(); ban.n = S.length; ban.i = Math.max(0, Math.min(ban.i, S.length - 1));
     $('#b-slides').innerHTML = S.map(function (s, k) {
       return '<div class="b-slide t' + (k % 4) + '" role="group" aria-roledescription="diapositiva" aria-label="' + (k + 1) + ' de ' + S.length + '"><div class="wrap b-in">' +
-        '<span class="b-fondo" aria-hidden="true"><span>' + esc(s.fondo) + ' · ' + esc(s.fondo) + ' · </span><span>' + esc(s.fondo) + ' · ' + esc(s.fondo) + ' · </span></span>' +
         '<div class="b-tx"><small>' + esc(s.eyebrow) + '</small><h2' + (s.t.length > 16 ? ' class="largo"' : '') + '>' + esc(s.t) + '</h2>' + (s.big ? '<p class="b-big">' + s.big + '</p>' : '') + '<p class="b-sub">' + s.sub + '</p>' + s.cta + '</div>' +
-        '<div class="b-arte">' + vis(s.p) + '</div></div></div>';
+        '<div class="b-arte"><span class="b-disco" aria-hidden="true"></span><span class="b-aro" aria-hidden="true"></span>' + vis(s.p) + '</div></div></div>';
     }).join('');
     $('#b-ctrl').innerHTML = S.length > 1 ? '<div class="b-pasos">' + S.map(function (s, k) { return '<button type="button" data-paso="' + k + '" aria-label="Ver oferta ' + (k + 1) + '"><i></i></button>'; }).join('') + '</div>' +
       '<div class="b-fl"><button class="flecha" type="button" data-bdir="-1" aria-label="Oferta anterior">' + IZQ + '</button><button class="flecha" type="button" data-bdir="1" aria-label="Oferta siguiente">' + DER + '</button></div>' : '';
@@ -145,7 +166,7 @@
     if (!ban.pausa && ban.n > 1 && !reducido()) ban.t = setTimeout(function () { irSlide(ban.i + 1); }, 4500);
   }
   function pintarTienda() {
-    pintarBanner();
+    pintarBanner(); turnarFotos();
     Object.keys(ESTANTES).forEach(function (k) {
       var e = ESTANTES[k], html = P.filter(function (p) { return e.cats.indexOf(p.cat) >= 0; }).map(tarjeta);
       html.splice(Math.min(e.promo.pos, html.length), 0, promo(e.promo));
@@ -277,7 +298,9 @@
 
   /* ---------- rutas: #producto-CÓDIGO abre la página del producto ---------- */
   var vistaActual = 'v-tienda';
-  function mostrar(id) { vistaActual = id; ['v-tienda', 'v-producto', 'v-pagar', 'v-factura'].forEach(function (x) { $('#' + x).hidden = x !== id; }); }
+  function menuTransparente() { var t = $('.top'); if (t) t.classList.toggle('sobre', vistaActual === 'v-tienda' && scrollY < 24); }
+  window.addEventListener('scroll', menuTransparente, { passive: true });
+  function mostrar(id) { vistaActual = id; ['v-tienda', 'v-producto', 'v-pagar', 'v-factura'].forEach(function (x) { $('#' + x).hidden = x !== id; }); menuTransparente(); }
   function navegar(url) { history.pushState(null, '', url); ruta(); }
   function ruta() {
     $('#toast').hidden = true;
