@@ -39,8 +39,16 @@ async function enviarCorreo(f) {
   if (prueba) { console.log('[correo de prueba] para', f.cliente.correo, '· PDF', pdf.length, 'bytes'); if (ENV.CORREO_GUARDAR) require('fs').writeFileSync(ENV.CORREO_GUARDAR, info.message); }
   return { enviado: true };
 }
+/* Traduce los errores de Gmail a algo que se entienda. */
+function errorGmail(e) {
+  const m = String((e && (e.response || e.message)) || '');
+  if (/535|Username and Password not accepted|Invalid login|BadCredentials/i.test(m)) return 'Gmail rechazó el usuario o la contraseña de aplicación. Revisa GMAIL_USER (el correo completo) y GMAIL_APP_PASSWORD (las 16 letras, sin espacios).';
+  if (/Application-specific password required|534/i.test(m)) return 'Gmail pide una contraseña de aplicación: GMAIL_APP_PASSWORD no puede ser la contraseña normal de la cuenta.';
+  if (/ETIMEDOUT|ECONNECTION|ESOCKET|ENOTFOUND/i.test(m)) return 'No se pudo conectar con Gmail en este momento. Inténtalo de nuevo en unos minutos.';
+  return 'Gmail no aceptó el envío: ' + m.slice(0, 160);
+}
 
-module.exports = async (req, res) => {
+const manejador = async (req, res) => {
   if (req.method !== 'POST') return enviar(res, 405, { error: 'Método no permitido.' });
   if (!limitar(req, 10, 10 * 60 * 1000)) return enviar(res, 429, { error: 'Demasiados pedidos seguidos. Espera unos minutos.' });
   let f;
@@ -86,3 +94,7 @@ module.exports = async (req, res) => {
   delete f.id;
   enviar(res, 200, { factura: f, email, existencias });
 };
+
+module.exports = manejador;
+module.exports.enviarCorreo = enviarCorreo;
+module.exports.errorGmail = errorGmail;

@@ -1,9 +1,11 @@
 /* /api/admin?a=<acción> · panel de administrador (una sola función de Vercel).
    Acceso: inicio de sesión con Supabase Auth y correo incluido en ADMIN_EMAILS (separados por comas).
    Todas las lecturas y escrituras usan la clave secreta del servidor; el navegador solo recibe un token de sesión. */
-const { leerJSON, enviar, limitar } = require('./_util');
+const { ENV, leerJSON, enviar, limitar } = require('./_util');
 const db = require('./_db');
 const UD = require('../lib/datos.js');
+const F = require('../lib/factura.js');
+const cat = require('./_catalogo');
 
 const ADMINS = (process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const COD = /^[A-Z]{3}-\d{3}$/;
@@ -97,6 +99,17 @@ const ACCIONES = {
     const ruta = carpeta + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + tipos[b.tipo];
     return { url: await db.subirFoto(ruta, buf, b.tipo) };
   },
+  /* ---------- correo: factura de muestra al administrador ---------- */
+  async correo_prueba(q, b, u) {
+    if (!ENV.GMAIL_USER || !ENV.GMAIL_APP_PASSWORD) throw new Error('Falta configurar GMAIL_USER y GMAIL_APP_PASSWORD en las variables del servidor.');
+    const pedido = require('./pedido');
+    const C = await cat.obtener(true);
+    const p = C.P.find(x => x.activo !== false) || C.P[0];
+    const f = F.armarFactura({ cliente: { nombre: 'Prueba de correo', correo: u.email }, entrega: 'tienda', items: [{ cod: p.cod, sel: C.grupos(p).map(() => 0), q: 1 }] }, { catalogo: C, sinLimite: true });
+    f.control = 'DTE-PRUEBA-' + Date.now(); f.codigo = require('crypto').randomUUID().toUpperCase(); f.correlativo = 0; f.pago = 'efectivo'; f.fecha = new Date().toISOString();
+    try { await pedido.enviarCorreo(f); } catch (e) { console.error('correo_prueba', e.message); throw new Error(pedido.errorGmail(e)); }
+    return { enviadoA: u.email, remitente: ENV.GMAIL_USER, copia: ENV.COPIA_FACTURAS || '' };
+  },
   /* ---------- promociones ---------- */
   async promociones() { return db.leer('/promociones?select=*&order=inicio.desc&limit=200'); },
   async promocion_guardar(q, b) {
@@ -122,7 +135,7 @@ const ACCIONES = {
     return db.leer(`/libro_ventas_cf?select=*&dia=gte.${mes}-01&dia=lt.${fin}&order=dia.asc`);
   }
 };
-const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir', 'promocion_guardar']);
+const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir', 'promocion_guardar', 'correo_prueba']);
 
 /* Valida y limpia la ficha de un producto que llega del panel. Lanza Error con un mensaje claro. */
 const CATEGORIAS = UD.CATS.map(c => c[0]);
@@ -190,7 +203,7 @@ module.exports = async (req, res) => {
   if (!u) return enviar(res, 401, { error: 'Tu sesión venció. Vuelve a iniciar sesión.' });
   try {
     const b = req.method === 'POST' ? await leerJSON(req, a === 'subir' ? 5000000 : 300000) : {};
-    enviar(res, 200, { datos: await accion(q, b) });
+    enviar(res, 200, { datos: await accion(q, b, u) });
   } catch (e) {
     const m = mensajeError(e);
     if (!m) console.error('admin', a, e.message);

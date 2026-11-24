@@ -67,7 +67,7 @@
     api('resumen').then(function (d) {
       var m = d.meses.filter(function (x) { return x.mes === mesActual; })[0] || { facturas: 0, total_con_iva: 0, ventas_netas: 0, iva_debito_fiscal: 0, costo_ventas: 0, utilidad_bruta: 0 };
       c.innerHTML =
-        '<div class="cab"><div><h1>Resumen</h1><p>Ventas de ' + nombreMes(mesActual) + ' e inventario actual.</p></div></div>' +
+        '<div class="cab"><div><h1>Resumen</h1><p>Ventas de ' + nombreMes(mesActual) + ' e inventario actual.</p></div><div class="herr"><button class="btn sec" type="button" id="probar-correo">Enviar correo de prueba</button></div></div>' +
         '<div class="cifras">' +
           cifra('Ventas netas', money(m.ventas_netas), m.facturas + (m.facturas == 1 ? ' factura · ' : ' facturas · ') + money(m.total_con_iva) + ' con IVA') +
           cifra('IVA débito fiscal', money(m.iva_debito_fiscal), '13 % incluido en las ventas') +
@@ -83,6 +83,14 @@
           d.meses.map(function (x) { return '<tr><td>' + nombreMes(x.mes) + '</td><td class="r">' + x.facturas + '</td><td class="r">' + money(x.total_con_iva) + '</td><td class="r">' + money(x.ventas_netas) + '</td><td class="r">' + money(x.iva_debito_fiscal) + '</td><td class="r">' + money(x.costo_ventas) + '</td><td class="r">' + money(x.utilidad_bruta) + '</td></tr>'; }).join('') + '</tbody></table></div></section>' : '');
     }, fallo(c));
   }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('#probar-correo'); if (!b) return;
+    b.disabled = true; b.textContent = 'Enviando…';
+    api('correo_prueba', null, {}).then(function (d) {
+      aviso('Factura de muestra enviada a ' + d.enviadoA + (d.copia ? ' (copia a ' + d.copia + ')' : '') + '. Revisa tu bandeja y la carpeta de spam.');
+    }, function (err) { if (err.message !== 'sesion') abrir(cab('No se pudo enviar el correo') + '<p class="err">' + esc(err.message) + '</p><div class="dlg-pie"><button class="btn sec" type="button" data-cerrar>Cerrar</button></div>'); })
+      .then(function () { b.disabled = false; b.textContent = 'Enviar correo de prueba'; });
+  });
   function cifra(t, v, s) { return '<div class="cifra"><small>' + t + '</small><b>' + v + '</b><span>' + esc(s) + '</span></div>'; }
   function pad(n) { return String(n).padStart(6, '0'); }
   function estado(e) { return e === 'anulada' ? '<span class="estado mal">Anulada</span>' : '<span class="estado ok">Emitida</span>'; }
