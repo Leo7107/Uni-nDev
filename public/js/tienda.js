@@ -543,7 +543,7 @@
       if (!cfg.paypalClientId) throw new Error('sin-config');
       return new Promise(function (ok, no) {
         var s = document.createElement('script');
-        s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cfg.paypalClientId) + '&currency=USD&intent=capture&enable-funding=card&disable-funding=paylater,venmo&locale=es_MX';
+        s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cfg.paypalClientId) + '&currency=USD&intent=capture&enable-funding=card&disable-funding=paylater,venmo';
         s.onload = function () { ok(window.paypal); }; s.onerror = function () { no(new Error('carga')); };
         document.head.appendChild(s);
       });
