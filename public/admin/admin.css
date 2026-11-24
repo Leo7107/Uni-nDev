@@ -156,3 +156,10 @@ tfoot td { font-weight: 700; background: var(--sunk); border-bottom: 0; }
 @media (max-width: 860px) { .campos.tres, .fila, .op { grid-template-columns: minmax(0, 1fr); } .grupo-v .cab-v { grid-template-columns: minmax(0, 1fr); } }
 .grupo-v input:not([type=checkbox]):not([type=color]) { padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; width: 100%; min-width: 0; font: inherit; }
 .grupo-v input:not([type=checkbox]):not([type=color]):focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+
+/* reenviar factura */
+.reenvio { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.reenvio div { display: grid; gap: 2px; }
+.reenvio b { font-size: 14px; }
+.reenvio span { font-size: 13px; color: var(--muted); }
+.reenvio .err { flex-basis: 100%; margin: 0; }

@@ -99,6 +99,31 @@ const ACCIONES = {
     const ruta = carpeta + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + tipos[b.tipo];
     return { url: await db.subirFoto(ruta, buf, b.tipo) };
   },
+  /* ---------- reenviar una factura emitida al correo que escribió el cliente ---------- */
+  async reenviar(q, b) {
+    const id = parseInt(b.id, 10); if (!(id > 0)) throw new Error('Factura inválida.');
+    if (!ENV.GMAIL_USER || !ENV.GMAIL_APP_PASSWORD) throw new Error('Falta configurar GMAIL_USER y GMAIL_APP_PASSWORD en las variables del servidor.');
+    const [x] = await db.leer('/facturas?select=*&id=eq.' + id);
+    if (!x) throw new Error('Esa factura no existe.');
+    if (x.estado === 'anulada') throw new Error('Esta factura está anulada; no se puede reenviar.');
+    const det = await db.leer('/factura_detalle?select=*&factura_id=eq.' + id + '&order=linea.asc');
+    const n = v => Number(v) || 0;
+    const f = {
+      id: x.id, correlativo: x.correlativo, control: x.control, codigo: String(x.codigo_generacion || '').toUpperCase(), fecha: x.fecha,
+      cliente: { nombre: x.cliente_nombre, correo: x.cliente_correo, tel: x.cliente_tel || '', dui: x.cliente_dui || '' },
+      entrega: x.entrega, municipio: x.municipio || '', dir: x.direccion || '', ref: x.referencia || '', pago: x.pago,
+      items: det.map(d => ({ cod: d.cod, desc: d.descripcion, ver: d.version || '', encargo: d.por_encargo, q: d.cantidad, pu: n(d.precio_unitario), tot: n(d.total), sin: n(d.ventas_netas), iva: n(d.iva),
+        normal: d.precio_normal == null ? n(d.precio_unitario) : n(d.precio_normal), descuento: n(d.descuento), promo: d.promocion || '' })),
+      total: n(x.ventas_gravadas), iva: n(x.iva_debito), gravadas: n(x.ventas_netas)
+    };
+    const pd = x.pago_detalle || {};
+    if (x.pago === 'tarjeta-prueba' && pd.ult4) f.tarjeta = pd;
+    if (x.pago === 'paypal' && pd.captura) f.paypal = pd;
+    const pedido = require('./pedido');
+    try { await pedido.enviarCorreo(f); } catch (e) { console.error('reenviar', e.message); throw new Error(pedido.errorGmail(e)); }
+    await db.marcarCorreoEnviado(id).catch(e => console.error('marcar correo', e.message));
+    return { enviadoA: x.cliente_correo };
+  },
   /* ---------- correo: factura de muestra al administrador ---------- */
   async correo_prueba(q, b, u) {
     if (!ENV.GMAIL_USER || !ENV.GMAIL_APP_PASSWORD) throw new Error('Falta configurar GMAIL_USER y GMAIL_APP_PASSWORD en las variables del servidor.');
@@ -135,7 +160,7 @@ const ACCIONES = {
     return db.leer(`/libro_ventas_cf?select=*&dia=gte.${mes}-01&dia=lt.${fin}&order=dia.asc`);
   }
 };
-const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir', 'promocion_guardar', 'correo_prueba']);
+const ESCRITURA = new Set(['compra', 'ajuste', 'anular', 'producto_guardar', 'subir', 'promocion_guardar', 'correo_prueba', 'reenviar']);
 
 /* Valida y limpia la ficha de un producto que llega del panel. Lanza Error con un mensaje claro. */
 const CATEGORIAS = UD.CATS.map(c => c[0]);

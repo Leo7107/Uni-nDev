@@ -206,6 +206,24 @@
         f.detalle.map(function (d) { return '<tr><td class="r">' + d.cantidad + '</td><td class="desc">' + esc(d.descripcion) + '<small>' + esc(d.cod) + (d.version ? ' · ' + esc(d.version) : '') + (d.por_encargo ? ' · por encargo' : '') + '</small></td><td class="r">' + money(d.precio_unitario) + '</td><td class="r">' + money(d.total) + '</td><td class="r">' + money(d.ventas_netas) + '</td><td class="r">' + money(d.iva) + '</td><td class="r">' + money(d.costo_total) + '</td></tr>'; }).join('') +
         '</tbody><tfoot><tr><td colspan="3">Totales</td><td class="r">' + money(f.ventas_gravadas) + '</td><td class="r">' + money(f.ventas_netas) + '</td><td class="r">' + money(f.iva_debito) + '</td><td class="r">' + money(f.costo_ventas) + '</td></tr></tfoot></table></div>' +
         (f.estado === 'emitida' ? '<form id="f-anular" class="campos" novalidate><div class="campo full"><label for="an-mot">Anular esta factura</label><input id="an-mot" type="text" placeholder="Motivo de la anulación" maxlength="160"></div><p class="nota campo full">Al anularla, las unidades vuelven al inventario y la venta deja de sumar en el libro de ventas.</p><p class="err campo full" hidden></p><div class="dlg-pie campo full"><button class="btn sec" type="button" data-cerrar>Cerrar</button><button class="btn peligro" type="submit">Anular factura ' + pad(f.correlativo) + '</button></div></form>' : '<div class="dlg-pie"><button class="btn sec" type="button" data-cerrar>Cerrar</button></div>');
+      if (f.estado === 'emitida') {
+        var pie = document.createElement('div'); pie.className = 'reenvio';
+        pie.innerHTML = '<div><b>Correo del cliente</b><span>' + esc(f.cliente_correo) + ' · ' + (f.correo_enviado ? 'factura enviada' : 'todavía no se ha enviado') + '</span></div><button class="btn sec" type="button" id="reenviar">Reenviar factura por correo</button>';
+        var tabla = dlg.querySelector('.tabla-caja'); tabla.parentNode.insertBefore(pie, tabla.nextSibling);
+        $('#reenviar').addEventListener('click', function () {
+          var b = this; b.disabled = true; b.textContent = 'Enviando…';
+          api('reenviar', null, { id: f.id }).then(function (d) {
+            aviso('Factura ' + pad(f.correlativo) + ' reenviada a ' + d.enviadoA);
+            pie.querySelector('span').textContent = d.enviadoA + ' · factura enviada';
+            b.textContent = 'Reenviar de nuevo'; b.disabled = false;
+          }, function (err) {
+            if (err.message === 'sesion') return;
+            b.disabled = false; b.textContent = 'Reenviar factura por correo';
+            var er = pie.querySelector('.err') || pie.appendChild(Object.assign(document.createElement('p'), { className: 'err' }));
+            er.textContent = err.message;
+          });
+        });
+      }
       var fa = $('#f-anular');
       if (fa) fa.addEventListener('submit', function (e) {
         e.preventDefault(); var mot = $('#an-mot').value.trim(), er = fa.querySelector('.err');
